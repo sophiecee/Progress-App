@@ -1,0 +1,3507 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="utf-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1, viewport-fit=cover" />
+<meta name="theme-color" content="#0f172a" />
+<title>Holiday Packing</title>
+<link rel="icon" href="data:image/svg+xml,<svg xmlns='http://www.w3.org/2000/svg' viewBox='0 0 100 100'><text y='.9em' font-size='90'>&#127890;</text></svg>" />
+<script src="https://cdn.tailwindcss.com"></script>
+<script src="https://unpkg.com/react@18/umd/react.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js" crossorigin></script>
+<script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+<script src="https://unpkg.com/lucide@0.469.0/dist/umd/lucide.js"></script>
+<style>
+  html { -webkit-text-size-adjust: 100%; }
+  body { margin: 0; overscroll-behavior-y: contain; }
+  #boot { font-family: ui-sans-serif, system-ui, sans-serif; padding: 3rem 1.5rem; text-align: center; color: #475569; }
+</style>
+</head>
+<body>
+<script>
+function showFailure(title, detail) {
+  var d = document.createElement('div');
+  d.setAttribute('style',
+    'position:fixed;inset:0;z-index:99999;overflow:auto;background:#fff;color:#7f1d1d;' +
+    'font-family:ui-monospace,monospace;font-size:13px;padding:20px;white-space:pre-wrap;word-break:break-word');
+  d.textContent = title + '\n\n' + detail;
+  document.body.appendChild(d);
+}
+window.addEventListener('error', function (e) {
+  showFailure('Something failed to load:',
+    (e.message || e) + '\n' + (e.filename || '') + '\nline ' + (e.lineno || '') + ':' + (e.colno || ''));
+});
+window.addEventListener('unhandledrejection', function (e) {
+  showFailure('A background task failed:', (e.reason && e.reason.message) || String(e.reason));
+});
+setTimeout(function () {
+  if (!window.__APP_STARTED__) {
+    showFailure('The app never started.',
+      'React loaded: ' + (typeof React !== 'undefined') +
+      '\nReactDOM loaded: ' + (typeof ReactDOM !== 'undefined') +
+      '\nBabel loaded: ' + (typeof Babel !== 'undefined') +
+      '\nLucide loaded: ' + (typeof lucide !== 'undefined') +
+      '\nTailwind loaded: ' + (typeof tailwind !== 'undefined') +
+      '\n\nIf these all say true, the fault is in the app code itself.' +
+      '\nIf any say false, that file was blocked or failed to download.');
+  }
+}, 8000);
+</script>
+<div id="root"><div id="boot">Loading your packing list&hellip;</div></div>
+<script type="text/babel" data-type="module">
+const { useState, useEffect, useMemo, useRef, useCallback } = React;
+
+/* Icons are drawn from lucide, loaded from a CDN. If it fails to load the app
+   still works, the little pictures just go blank. */
+function LucideIcon({ name, size = 16, className = "", strokeWidth = 2, ...rest }) {
+  /* lucide stores each icon as ["svg", {attrs}, [ [tag, attrs], ... ] ] */
+  let parts = [];
+  try {
+    const icon = window.lucide && window.lucide.icons && window.lucide.icons[name];
+    if (Array.isArray(icon) && Array.isArray(icon[2])) parts = icon[2];
+  } catch (e) { parts = []; }
+
+  const children = parts.map(function (part, i) {
+    if (!Array.isArray(part) || typeof part[0] !== "string") return null;
+    const attrs = part[1] && typeof part[1] === "object" ? part[1] : {};
+    return React.createElement(part[0], { key: i, ...attrs });
+  }).filter(Boolean);
+
+  return React.createElement(
+    "svg",
+    { width: size, height: size, viewBox: "0 0 24 24", fill: "none", stroke: "currentColor",
+      strokeWidth, strokeLinecap: "round", strokeLinejoin: "round", className, ...rest },
+    children
+  );
+}
+const Luggage = (p) => <LucideIcon name="Luggage" {...p} />;
+const Home = (p) => <LucideIcon name="Home" {...p} />;
+const PackageCheck = (p) => <LucideIcon name="PackageCheck" {...p} />;
+const Plus = (p) => <LucideIcon name="Plus" {...p} />;
+const Settings = (p) => <LucideIcon name="Settings" {...p} />;
+const History = (p) => <LucideIcon name="History" {...p} />;
+const Sparkles = (p) => <LucideIcon name="Sparkles" {...p} />;
+const X = (p) => <LucideIcon name="X" {...p} />;
+const Check = (p) => <LucideIcon name="Check" {...p} />;
+const Trash2 = (p) => <LucideIcon name="Trash2" {...p} />;
+const ChevronRight = (p) => <LucideIcon name="ChevronRight" {...p} />;
+const ChevronDown = (p) => <LucideIcon name="ChevronDown" {...p} />;
+const ChevronUp = (p) => <LucideIcon name="ChevronUp" {...p} />;
+const Loader2 = (p) => <LucideIcon name="Loader2" {...p} />;
+const Wifi = (p) => <LucideIcon name="Wifi" {...p} />;
+const WifiOff = (p) => <LucideIcon name="WifiOff" {...p} />;
+const ArrowLeft = (p) => <LucideIcon name="ArrowLeft" {...p} />;
+const Pencil = (p) => <LucideIcon name="Pencil" {...p} />;
+const RotateCcw = (p) => <LucideIcon name="RotateCcw" {...p} />;
+const Copy = (p) => <LucideIcon name="Copy" {...p} />;
+const Flag = (p) => <LucideIcon name="Flag" {...p} />;
+const Pill = (p) => <LucideIcon name="Pill" {...p} />;
+const Snowflake = (p) => <LucideIcon name="Snowflake" {...p} />;
+const Phone = (p) => <LucideIcon name="Phone" {...p} />;
+const Camera = (p) => <LucideIcon name="Camera" {...p} />;
+const ListChecks = (p) => <LucideIcon name="ListChecks" {...p} />;
+const BookOpen = (p) => <LucideIcon name="BookOpen" {...p} />;
+const Search = (p) => <LucideIcon name="Search" {...p} />;
+const UserRound = (p) => <LucideIcon name="UserRound" {...p} />;
+const ClipboardList = (p) => <LucideIcon name="ClipboardList" {...p} />;
+const GripVertical = (p) => <LucideIcon name="GripVertical" {...p} />;
+const CloudOff = (p) => <LucideIcon name="CloudOff" {...p} />;
+
+
+/* ==================================================================
+   Holiday packing, for two grown-ups and two children who need
+   things to be predictable. Single file. Demo mode or Supabase sync.
+================================================================== */
+
+const DEFAULT_ROOMS = [
+  "Kitchen", "Fridge / Freezer", "Bathroom", "Medicine Cabinet",
+  "Sensory / Calming Corner", "Kids Bedroom", "Our Bedroom",
+  "Hallway Cupboard", "Utility Room", "Living Room", "Garage / Shed",
+];
+
+const DEFAULT_BAGS = [
+  "Overnight Grab Bag", "Cabin Entertainment Bag", "Kid 1 Care Bag",
+  "Kid 2 Care Bag", "Snack + Cool Bag", "Main Suitcase", "Car Boot Box",
+  "Nappy / Changing Bag",
+];
+
+const DEFAULT_PACKERS = ["Me", "Partner", "Either of us"];
+
+const JOB_KINDS = [
+  { id: "sort", label: "Sort before we go", blurb: "Bookings, letters, assistance, the cat." },
+  { id: "buy", label: "Buy before we go", blurb: "Everything to pick up or reorder first." },
+  { id: "leaving", label: "As we leave the house", blurb: "The last ten minutes, in order." },
+];
+
+const uid = () =>
+  crypto?.randomUUID?.() ?? "id-" + Date.now() + "-" + Math.random().toString(16).slice(2);
+
+const store = {
+  async get(k) { try { const v = localStorage.getItem("packing:" + k); return v ? JSON.parse(v) : null; } catch { return null; } },
+  async set(k, v) { try { localStorage.setItem("packing:" + k, JSON.stringify(v)); } catch {} },
+};
+
+/* Writes that failed to reach Supabase (no signal, tunnel, etc.) live here
+   until a connection returns. Plain functions, not component state, so they
+   work the instant the app starts and can be called from anywhere. */
+const readQueue = () => { try { return JSON.parse(localStorage.getItem("packing:outbox") || "[]"); } catch { return []; } };
+const writeQueue = (q) => { try { localStorage.setItem("packing:outbox", JSON.stringify(q)); } catch {} };
+const enqueueOp = (op) => writeQueue([...readQueue(), { ...op, queuedAt: Date.now() }]);
+
+/* ------------------- pasting in an old packing list ------------------
+   Handles the shape Google Tasks lists come out in: headings that may or
+   may not end in a colon, quantities written as "x3" / "X2" / "7 bottles"
+   (sometimes glued straight onto the name), and parenthetical asides that
+   are really notes rather than part of the item name. */
+const HEADING_WORDS = [
+  "downstairs", "upstairs", "kitchen", "meds", "medicine", "medication",
+  "bathroom", "bedroom", "living room", "hallway", "utility", "garage",
+  "shed", "fridge", "freezer", "nursery", "car", "loft", "conservatory",
+  "bag", "suitcase", "rucksack", "backpack", "box",
+];
+
+function looksLikeHeading(line) {
+  let t = line.trim();
+  if (!t) return false;
+  // strip a leading checkbox before judging, e.g. "[ ] **BUGGIES:**"
+  t = t.replace(/^\[[ xX]?\]\s*/, "").trim();
+  if (!t) return false;
+  // **BOLD:** or *italic:* wrapped headings — markdown emphasis around a colon-ended line
+  if (/^\*{1,2}[^*]+\*{1,2}:?\s*$/.test(t)) return true;
+  if (t.endsWith(":")) return true;
+  const low = t.toLowerCase().replace(/:$/, "").replace(/\*/g, "");
+  if (t.split(/\s+/).length <= 4 && HEADING_WORDS.some((h) => low.includes(h))) {
+    if (!/[xX]\s*\d+\s*$/.test(t) && !/\(/.test(t)) return true;
+  }
+  return false;
+}
+
+function parseListItem(raw) {
+  let line = raw.trim()
+    .replace(/^[-–—*•\u2022]\s*/, "")
+    .replace(/^\[[ xX]?\]\s*/, "")      // "[ ]", "[x]" checkbox syntax
+    .replace(/^[-–—]\s*\[[ xX]?\]\s*/, "") // "- [ ]" nested checkbox syntax
+    .replace(/^\*\*|\*\*$/g, "")        // **bold** markers left over from markdown
+    .trim();
+  let quantity = 1;
+  let notes = "";
+  const paren = line.match(/\(([^)]*)\)/);
+  if (paren) { notes = paren[1].trim(); line = line.replace(paren[0], "").trim(); }
+  const trailing = line.match(/[xX]\s*(\d+)\s*$/);
+  if (trailing) { quantity = parseInt(trailing[1], 10); line = line.slice(0, trailing.index).trim(); }
+  const leading = line.match(/^(\d+)\s+(.*)$/);
+  if (leading && quantity === 1) { quantity = parseInt(leading[1], 10); line = leading[2].trim(); }
+  line = line.replace(/[,\-–]\s*$/, "").trim();
+  return { name: line, quantity, notes };
+}
+
+function parsePastedList(text) {
+  const groups = [];
+  let current = { heading: "Unsorted", items: [] };
+  text.split(/\r?\n/).forEach((raw) => {
+    const line = raw.trim();
+    if (!line) return;
+    if (looksLikeHeading(line)) {
+      if (current.items.length) groups.push(current);
+      const cleanHeading = line
+        .replace(/^\[[ xX]?\]\s*/, "")
+        .replace(/\*{1,2}/g, "")
+        .replace(/:$/, "")
+        .trim();
+      current = { heading: cleanHeading || "Unsorted", items: [] };
+    } else {
+      const parsed = parseListItem(line);
+      if (parsed.name) current.items.push(parsed);
+    }
+  });
+  if (current.items.length) groups.push(current);
+  return groups;
+}
+
+/* Recognise a trip title as the very first non-empty line, so it becomes
+   the trip's own name/month/transport rather than an item to pack.
+   Titles in these lists read like: "Efteling christmas 25, driving" or
+   "Iona summer 2026, 9 days train and ferry" — free text, comma-loose,
+   never itself something you'd pack. */
+const MONTHS = ["january","february","march","april","may","june","july","august","september","october","november","december"];
+const MONTH_ALIASES = { christmas: "December", xmas: "December", easter: "April", halloween: "October", newyear: "January" };
+const TRANSPORTS = [
+  { match: /\bplane|flying|flight\b/i, value: "Plane" },
+  { match: /\btrain\b/i, value: "Train" },
+  { match: /\bferry\b/i, value: "Ferry" },
+  { match: /\bcoach\b/i, value: "Coach" },
+  { match: /\bcar|driving|drive\b/i, value: "Car" },
+];
+
+function extractTripTitle(text) {
+  const lines = text.split(/\r?\n/).map((l) => l.trim()).filter(Boolean);
+  if (!lines.length) return null;
+  const first = lines[0];
+  if (looksLikeHeading(first)) return null; // it's a real group heading, leave it alone
+
+  const low = first.toLowerCase();
+  const monthWordFound = MONTHS.find((m) => low.includes(m));
+  const monthAliasFound = Object.keys(MONTH_ALIASES).find((a) => low.includes(a));
+  const monthFound = monthWordFound ? monthWordFound[0].toUpperCase() + monthWordFound.slice(1) : (monthAliasFound ? MONTH_ALIASES[monthAliasFound] : null);
+  const daysFound = first.match(/(\d+)\s*day/i);
+  const transportFound = TRANSPORTS.find((t) => t.match.test(first));
+  const internationalFound = /international|flying|flight|passport/i.test(first);
+
+  // Only treat it as a title if it has at least one recognisable trip signal —
+  // otherwise a genuine "no heading" list would lose its first real item.
+  if (!monthFound && !daysFound && !transportFound) return null;
+
+  const namePart = first.split(/[,.]/)[0].trim();
+
+  return {
+    consumedLine: first,
+    name: namePart || "Imported trip",
+    month: monthFound,
+    days: daysFound ? parseInt(daysFound[1], 10) : null,
+    transport: transportFound ? transportFound.value : null,
+    international: internationalFound,
+  };
+}
+
+/* Best-effort room guessing for a group heading. Real matches only — if
+   nothing fits, say so rather than silently picking whatever's first in
+   the list, which looks like a confident guess but isn't one. */
+const UPSTAIRS_HINTS = ["bedroom", "bathroom", "landing", "loft", "utility cupboard", "utility"];
+const DOWNSTAIRS_HINTS = ["kitchen", "living room", "hallway", "garage", "shed", "conservatory", "downstairs"];
+
+function guessRoom(heading, rooms) {
+  const low = heading.toLowerCase();
+  const isNegated = (word) => new RegExp(`\\b(non|not|no)\\s+${word}`).test(low);
+
+  const direct = rooms.find((r) => {
+    const name = r.toLowerCase();
+    const firstWord = name.split(" ")[0];
+    return !isNegated(firstWord) && (low.includes(name) || low.includes(firstWord));
+  });
+  if (direct) return direct;
+
+  if (low.includes("upstairs")) {
+    const match = rooms.find((r) => UPSTAIRS_HINTS.some((h) => r.toLowerCase().includes(h) && !isNegated(h.split(" ")[0])));
+    if (match) return match;
+  }
+  if (low.includes("downstairs")) {
+    const match = rooms.find((r) => DOWNSTAIRS_HINTS.some((h) => r.toLowerCase().includes(h) && !isNegated(h.split(" ")[0])));
+    if (match) return match;
+  }
+  return null; // no confident guess
+}
+
+function guessBag(heading, bags) {
+  const low = heading.toLowerCase();
+  const direct = bags.find((b) => low.includes(b.toLowerCase()) || low.includes(b.toLowerCase().split(" ")[0]));
+  if (direct) return direct;
+  return null;
+}
+
+
+
+
+
+/* ---------------------------- demo data ---------------------------- */
+
+function demoSeed() {
+  const t3 = { id: uid(), name: "Half-term by the sea", month: "May", days: 5, transport: "Car", notes: "", created_at: "2026-05-24", review: null };
+  const t2 = {
+    id: uid(), name: "Grandma's at Christmas", month: "December", days: 4, transport: "Train", notes: "", created_at: "2025-12-21",
+    review: JSON.stringify({
+      bags_used: "Overnight Grab Bag, Cabin Entertainment Bag, Main Suitcase, Kid 1 Care Bag",
+      unused: "Weighted blanket — too heavy to carry on the train.",
+      missing: "A second charger. Spare ear defender pads.",
+      what_worked: "Visual timetable for the journey. Boarding early with assisted travel.",
+      notes: "Assisted travel booking took 48 hours to confirm — do it a week ahead next time.",
+    }),
+  };
+  const t1 = { id: uid(), name: "Cornwall cottage", month: "August", days: 7, transport: "Car", notes: "", created_at: "2025-08-02", review: null };
+
+  const it = (trip, name, room, bag, packed, qty, note, extra = {}) => ({
+    id: uid(), trip_id: trip, name, room_source: room, assigned_bag: bag,
+    is_packed: packed, quantity: qty, notes_or_special_instructions: note || "",
+    packer: extra.packer || "Either of us", is_flagged: !!extra.flag,
+    flag_note: extra.flag || "", is_prescription: !!extra.rx, last_minute: !!extra.late,
+  });
+
+  return {
+    trips: [t3, t2, t1],
+    items: [
+      it(t3.id, "Ear defenders", "Sensory / Calming Corner", "Cabin Entertainment Bag", true, 2, "Blue pair pinches — take the grey", { packer: "Me" }),
+      it(t3.id, "Weighted blanket", "Sensory / Calming Corner", "Car Boot Box", false, 1, "", { packer: "Partner" }),
+      it(t3.id, "Chew necklace", "Sensory / Calming Corner", "Kid 1 Care Bag", true, 2, "", { packer: "Me" }),
+      it(t3.id, "Melatonin", "Medicine Cabinet", "Overnight Grab Bag", false, 1, "Stays with an adult", { packer: "Me", rx: true }),
+      it(t3.id, "Epilepsy meds", "Medicine Cabinet", "Overnight Grab Bag", false, 2, "Full course plus 2 spare days", { packer: "Me", rx: true }),
+      it(t3.id, "Calpol + syringe", "Medicine Cabinet", "Kid 2 Care Bag", false, 1, "", { packer: "Me" }),
+      it(t3.id, "Blackout blind + suckers", "Kids Bedroom", "Main Suitcase", false, 1, "Room won't be dark enough otherwise", { packer: "Partner" }),
+      it(t3.id, "Familiar bedsheet", "Kids Bedroom", "Main Suitcase", true, 1, "Unwashed — the smell matters", { packer: "Partner" }),
+      it(t3.id, "Bunny (Kid 2)", "Kids Bedroom", "Overnight Grab Bag", false, 1, "", { packer: "Me", flag: "Can't find it — check under the bunk" }),
+      it(t3.id, "Safe-food snacks", "Kitchen", "Snack + Cool Bag", true, 8, "Plain crackers, orange packet", { packer: "Partner" }),
+      it(t3.id, "Beaker with green lid", "Kitchen", "Snack + Cool Bag", false, 2, "", { packer: "Partner", flag: "Only one green lid left" }),
+      it(t3.id, "Ice blocks x4", "Fridge / Freezer", "Snack + Cool Bag", false, 4, "Freeze the night before", { packer: "Partner", late: true }),
+      it(t3.id, "Yoghurts + cheese", "Fridge / Freezer", "Snack + Cool Bag", false, 6, "", { packer: "Partner", late: true }),
+      it(t3.id, "Made-up bottles", "Fridge / Freezer", "Snack + Cool Bag", false, 2, "", { packer: "Me", late: true }),
+      it(t3.id, "Tablet + charger", "Living Room", "Cabin Entertainment Bag", true, 1, "Download shows first", { packer: "Me" }),
+      it(t3.id, "Wipes", "Utility Room", "Nappy / Changing Bag", false, 3, "", { packer: "Partner" }),
+      it(t3.id, "Sun cream", "Bathroom", "Kid 2 Care Bag", false, 1, "Sensory-friendly one only", { packer: "Partner" }),
+      it(t3.id, "Wellies x2", "Hallway Cupboard", "Car Boot Box", false, 2, "", { packer: "Partner" }),
+      it(t2.id, "Ear defenders", "Sensory / Calming Corner", "Cabin Entertainment Bag", true, 2, "Essential on the train"),
+      it(t2.id, "Visual timetable", "Living Room", "Cabin Entertainment Bag", true, 1, "Made a huge difference"),
+      it(t2.id, "Melatonin", "Medicine Cabinet", "Overnight Grab Bag", true, 1, "", { rx: true }),
+      it(t2.id, "Thermals x4", "Kids Bedroom", "Main Suitcase", true, 4, ""),
+      it(t1.id, "Paddling pool", "Garage / Shed", "Car Boot Box", true, 1, ""),
+      it(t1.id, "Sand-free mat", "Garage / Shed", "Car Boot Box", true, 1, ""),
+      it(t1.id, "Safe-food snacks", "Kitchen", "Snack + Cool Bag", true, 10, ""),
+    ],
+    tasks: [
+      { id: uid(), trip_id: t3.id, kind: "sort", title: "Book assisted travel", notes: "Not needed — driving", done: true, packer: "Me", position: 0 },
+      { id: uid(), trip_id: t3.id, kind: "sort", title: "Wheelchair fixings checked in car", notes: "Straps live in the boot box", done: false, packer: "Partner", position: 1 },
+      { id: uid(), trip_id: t3.id, kind: "sort", title: "Travel insurance renewed", notes: "Declare both diagnoses", done: false, packer: "Me", position: 2 },
+      { id: uid(), trip_id: t3.id, kind: "sort", title: "Cat sitter confirmed", notes: "Keys to next door", done: true, packer: "Partner", position: 3 },
+      { id: uid(), trip_id: t3.id, kind: "sort", title: "Medical letter from GP", notes: "Lists meds — needed for controlled drugs", done: false, packer: "Me", position: 4 },
+      { id: uid(), trip_id: t3.id, kind: "buy", title: "Travel-size sensory cream", notes: "", done: false, packer: "Either of us", position: 0 },
+      { id: uid(), trip_id: t3.id, kind: "buy", title: "Spare ear defender pads", notes: "", done: false, packer: "Me", position: 1 },
+      { id: uid(), trip_id: t3.id, kind: "buy", title: "Crackers x4 packets", notes: "Orange packet only", done: true, packer: "Partner", position: 2 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Ice blocks into cool bag", notes: "Out of the freezer last", done: false, packer: "Partner", position: 0 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Fridge items into cool bag", notes: "", done: false, packer: "Partner", position: 1 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Cat fed + water topped up", notes: "", done: false, packer: "Me", position: 2 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Bins out", notes: "", done: false, packer: "Me", position: 3 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Kitchen door locked", notes: "", done: false, packer: "Either of us", position: 4 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Phones, wallets, keys", notes: "", done: false, packer: "Either of us", position: 5 },
+      { id: uid(), trip_id: t3.id, kind: "leaving", title: "Bunny in the grab bag", notes: "Check, don't assume", done: false, packer: "Me", position: 6 },
+    ],
+    contacts: [
+      { id: uid(), trip_id: t3.id, label: "Seaview Cottages", category: "Where we're staying", phone: "01271 555 0132", reference: "Booking SVC-88214, arrive after 4pm", notes: "Key safe code given on the day. Ground floor, wet room." },
+      { id: uid(), trip_id: t3.id, label: "Accessible taxi — Coast Cars", category: "Transport", phone: "01271 555 0999", reference: "Book 24h ahead for the ramp vehicle", notes: "" },
+      { id: uid(), trip_id: t3.id, label: "Nearest A&E — North Devon", category: "Medical", phone: "01271 322 577", reference: "22 min drive", notes: "" },
+      { id: uid(), trip_id: t3.id, label: "Cat sitter (Jen)", category: "Home", phone: "07700 900 118", reference: "Visits 8am and 6pm", notes: "" },
+    ],
+    photos: [],
+    activeTripId: t3.id,
+  };
+}
+
+/* --------------------------- supabase REST -------------------------- */
+
+function makeClient(url, key) {
+  const base = url.replace(/\/$/, "");
+  const h = { apikey: key, Authorization: `Bearer ${key}`, "Content-Type": "application/json" };
+  const go = async (path, opts = {}) => {
+    const res = await fetch(`${base}/rest/v1/${path}`, { ...opts, headers: { ...h, ...(opts.headers || {}) } });
+    if (!res.ok) throw new Error((await res.text()) || res.statusText);
+    const t = await res.text();
+    return t ? JSON.parse(t) : null;
+  };
+  return {
+    all: (table) => go(`${table}?select=*`),
+    insert: (table, rows) => go(table, { method: "POST", headers: { Prefer: "return=representation" }, body: JSON.stringify(rows) }),
+    update: (table, id, patch) => go(`${table}?id=eq.${id}`, { method: "PATCH", body: JSON.stringify(patch) }),
+    remove: (table, id) => go(`${table}?id=eq.${id}`, { method: "DELETE" }),
+    /* Insert-or-update in one call, for the single shared settings row —
+       simpler than checking existence first from a phone on a flaky connection. */
+    upsert: (table, row) => go(table, { method: "POST", headers: { Prefer: "resolution=merge-duplicates,return=representation" }, body: JSON.stringify(row) }),
+  };
+}
+
+const SQL = `create table trips (
+  id uuid primary key, name text, month text, days int,
+  transport text, notes text, review text,
+  accommodation text, international boolean default false,
+  nights_en_route int default 0,
+  created_at timestamptz default now()
+);
+
+create table items (
+  id uuid primary key,
+  trip_id uuid references trips(id) on delete cascade,
+  name text not null, room_source text, assigned_bag text,
+  is_packed boolean default false, quantity int default 1,
+  notes_or_special_instructions text, packer text,
+  is_flagged boolean default false, flag_note text,
+  is_prescription boolean default false, last_minute boolean default false, reordered boolean default false,
+  was_missed boolean default false
+);
+
+create table tasks (
+  id uuid primary key,
+  trip_id uuid references trips(id) on delete cascade,
+  kind text, title text, notes text,
+  done boolean default false, packer text, position int default 0,
+  was_missed boolean default false
+);
+
+create table contacts (
+  id uuid primary key,
+  trip_id uuid references trips(id) on delete cascade,
+  label text, category text, phone text, reference text, notes text
+);
+
+create table photos (
+  id uuid primary key,
+  trip_id uuid references trips(id) on delete cascade,
+  bag text, caption text, data_url text
+);
+
+/* One shared row holding rooms, bags and packers — a single source of truth
+   both phones read and write, instead of each phone keeping its own local
+   copy (which is how they used to drift apart). */
+create table app_settings (
+  id text primary key default 'shared',
+  rooms jsonb, bags jsonb, packers jsonb,
+  updated_at timestamptz default now()
+);
+
+alter table trips enable row level security;
+alter table items enable row level security;
+alter table tasks enable row level security;
+alter table contacts enable row level security;
+alter table photos enable row level security;
+alter table app_settings enable row level security;
+create policy "open" on trips for all using (true) with check (true);
+create policy "open" on items for all using (true) with check (true);
+create policy "open" on tasks for all using (true) with check (true);
+create policy "open" on contacts for all using (true) with check (true);
+create policy "open" on photos for all using (true) with check (true);
+create policy "open" on app_settings for all using (true) with check (true);
+grant select, insert, update, delete on public.app_settings to anon;`;
+
+/* ------------------------------- AI -------------------------------- */
+
+async function callClaude(prompt, maxTokens = 1000, onStatus) {
+  const apiKey = (await store.get("anthropic-key")) || "";
+  if (!apiKey) throw new Error("Add your Anthropic API key in Settings first — the AI features need it.");
+
+  /* "Failed to fetch" is the browser's single generic message for several very
+     different problems, so retry a couple of times (transient drops are the
+     most common cause by far) and then report something specific. */
+  const attempt = async () => {
+    return fetch("https://api.anthropic.com/v1/messages", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+        "x-api-key": apiKey,
+        "anthropic-version": "2023-06-01",
+        "anthropic-dangerous-direct-browser-access": "true",
+      },
+      body: JSON.stringify({ model: "claude-sonnet-4-6", max_tokens: maxTokens, messages: [{ role: "user", content: prompt }] }),
+    });
+  };
+
+  let res, lastNetworkError;
+  for (let tryNum = 1; tryNum <= 3; tryNum++) {
+    try {
+      if (onStatus && tryNum > 1) onStatus(`Connection failed — retrying (${tryNum} of 3)…`);
+      res = await attempt();
+      lastNetworkError = null;
+      break;
+    } catch (e) {
+      lastNetworkError = e;
+      if (tryNum < 3) await new Promise((r) => setTimeout(r, tryNum * 1500));
+    }
+  }
+
+  if (lastNetworkError) {
+    const online = typeof navigator !== "undefined" && navigator.onLine === false ? false : true;
+    if (!online) {
+      throw new Error("Your phone reports no internet connection. The AI features need one — everything else in the app works offline.");
+    }
+    throw new Error(
+      "Couldn't reach Anthropic's servers after three tries, even though your phone thinks it's online.\n\n" +
+      "This is usually one of:\n" +
+      "• the wifi network or router blocking api.anthropic.com\n" +
+      "• a DNS filter or parental-control service on the network\n" +
+      "• a temporary outage at Anthropic's end\n\n" +
+      "Worth trying mobile data, or a different network, to tell which. Everything else in the app is unaffected."
+    );
+  }
+
+  if (res.status === 401) throw new Error("That Anthropic API key was rejected. Check it in Settings — it may have been revoked or mistyped.");
+  if (res.status === 429) throw new Error("Rate limited by Anthropic — too many requests too quickly. Wait a minute and try again.");
+  if (res.status === 400) {
+    let detail = "";
+    try { const j = await res.json(); detail = j?.error?.message || ""; } catch {}
+    throw new Error("Anthropic rejected the request" + (detail ? `: ${detail}` : ". Check your API key has credit available."));
+  }
+  if (res.status === 402 || res.status === 403) {
+    throw new Error("Anthropic refused the request — usually this means the API key has no credit left, or lacks permission. Check console.anthropic.com.");
+  }
+  if (res.status >= 500) throw new Error(`Anthropic's servers returned an error (${res.status}). Usually temporary — try again shortly.`);
+  if (!res.ok) throw new Error(`The AI request failed with status ${res.status}. Try again in a moment.`);
+
+  const data = await res.json();
+  const text = (data.content || []).map((c) => c.text || "").join("");
+  const s = text.indexOf("[");
+  if (s === -1) throw new Error("The AI reply couldn't be read. Try again.");
+
+  let end = text.lastIndexOf("]");
+  let slice = end > s ? text.slice(s, end + 1) : text.slice(s);
+  try {
+    return JSON.parse(slice);
+  } catch (e) {
+    /* Reply likely got cut off mid-object. Drop back to the last complete
+       item — the last "}," or "}" before the break — and close the array. */
+    let cut = slice.lastIndexOf("},");
+    if (cut === -1) cut = slice.lastIndexOf("}");
+    if (cut === -1) throw new Error("The AI reply couldn't be read. Try again.");
+    const repaired = slice.slice(0, cut + 1) + "]";
+    try {
+      return JSON.parse(repaired);
+    } catch (e2) {
+      throw new Error("The AI reply couldn't be read. Try again.");
+    }
+  }
+}
+
+const historyText = (trips, items) =>
+  trips.slice(0, 8).map((t) => {
+    const names = items.filter((i) => i.trip_id === t.id).map((i) => i.name).join(", ");
+    const when = t.created_at ? String(t.created_at).slice(0, 10) : "date unknown";
+    const bits = [
+      `${t.month}`, `${t.days} days`, `by ${t.transport}`,
+      t.accommodation ? t.accommodation : null,
+      t.international ? "international" : "domestic",
+      t.nights_en_route ? `${t.nights_en_route} night(s) in temporary accommodation en route` : null,
+    ].filter(Boolean).join(", ");
+    let line = `- "${t.name}" [logged ${when}] (${bits}): ${names || "no items"}`;
+    const missedNames = items.filter((i) => i.trip_id === t.id && i.was_missed).map((i) => i.name);
+    if (missedNames.length) {
+      line += `\n  WISHED THEY'D PACKED (forgotten on this trip — include these unless clearly irrelevant now): ${missedNames.join(", ")}`;
+    }
+    if (t.review) {
+      try {
+        const r = JSON.parse(t.review);
+        line += `\n  AFTERWARDS: bags used: ${r.bags_used || "?"}. Not used: ${r.unused || "none"}. Worked well: ${r.what_worked || ""}. ${r.notes || ""}`;
+      } catch {}
+    }
+    return line;
+  }).join("\n");
+
+/* The draft used to be one huge request for 45 items, which regularly ran out
+   of response room and got truncated. It's now five smaller focused requests
+   run in sequence: each one completes reliably, each can be more thorough about
+   its own area, and if one fails the others still land. */
+const DRAFT_SECTIONS = [
+  {
+    id: "medical",
+    label: "medication and medical kit",
+    brief: "All medication, feeding equipment, PEG/tube kit, dressings, syringes, and clinical supplies. Weight RECENCY above all — the children's needs change constantly, so the most recently logged trip is the best guide even if its season and transport are wrong. Scale doses and consumables to the trip length, plus a safety margin of spare days. Mark prescription medication with p:true.",
+    max: 18,
+  },
+  {
+    id: "documents",
+    label: "documents and logistics",
+    brief: "Travel documents, wallets, phones, chargers, adaptors, and anything needed to physically get there and get assistance. Include blue badge, medical letters and equipment-related paperwork if the past trips mention them.",
+    max: 12,
+  },
+  {
+    id: "food",
+    label: "food and feeding",
+    brief: "Safe foods, smoothies, snacks, pouches, thermoses, cups, spoons, bibs, cool bag and ice blocks, food prep equipment. Weight ACCOMMODATION heavily — self-catering needs prep kit a hotel does not. Mark anything from the fridge or freezer, or still in use that morning, with l:true.",
+    max: 14,
+  },
+  {
+    id: "clothing",
+    label: "clothing and sleep",
+    brief: "Clothing, footwear, weather gear, nightwear, blankets, comforters, sleep equipment such as bed barriers and night lights. Weight SEASON above all — a trip in a similar month is far more informative than a recent one in a different season. Scale outfit counts to the trip length assuming some hand washing.",
+    max: 16,
+  },
+  {
+    id: "other",
+    label: "sensory, entertainment and everything else",
+    brief: "Sensory and regulation items, ear defenders, chewies, entertainment for the journey and for downtime, toiletries, nappies and changing supplies, buggies and mobility equipment, and anything else not already covered by medication, documents, food, or clothing.",
+    max: 16,
+  },
+];
+
+function draftContext({ month, days, transport, needs, history, accommodation, international, nightsEnRoute }) {
+  return `THIS TRIP:
+- ${month}, ${days} days, travelling by ${transport}
+- Accommodation: ${accommodation || "not specified"}
+- ${international ? "INTERNATIONAL — passports, birth certificates, travel insurance, international breakdown cover, EU plug adaptors all matter" : "Domestic"}
+- ${nightsEnRoute ? `${nightsEnRoute} night(s) in temporary accommodation on the way out — that much needs to be reachable in the overnight grab bag, not buried` : "No overnight stops en route"}
+
+CHILDREN'S NEEDS: ${needs || "not specified"}
+
+PAST TRIPS (most recently logged first), with what they said afterwards:
+${history || "No past trips recorded yet."}
+
+GENERAL RULES:
+- ALWAYS include swimming things for everyone, on every trip regardless of season or destination — pools, hotel spas and unexpected warm days all happen, and it's the single most commonly forgotten category.
+${["May", "June", "July", "August", "September"].includes(month) ? "- This is a SUMMER trip (" + month + "). Always include insect repellent, sun cream, sun hats and sunglasses. Whether it's a midge-heavy Scottish August or a hot Mediterranean one, all of these matter.\n" : ""}${["November", "December", "January", "February"].includes(month) ? "- This is a WINTER trip (" + month + "). Include thermal layers, gloves, hats, waterproofs and warm outerwear for everyone.\n" : ""}- Consumables (nappies, wipes, feeds, medication doses) scale linearly with ${days} days; equipment does not.
+- If a past trip's notes say something came home unused, don't suggest it again unless season or transport makes it newly relevant.
+- If a past trip's notes say they wished they'd had something, include it.
+- Anything needed before the main luggage is opened belongs in the overnight grab bag. Anything needed during the journey belongs in the cabin/close-by bag.`;
+}
+
+async function draftItemsSectioned(params, onProgress) {
+  const { rooms, bags } = params;
+  const context = draftContext(params);
+  const collected = [];
+  const failures = [];
+  const seen = new Set();
+  const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  for (let idx = 0; idx < DRAFT_SECTIONS.length; idx++) {
+    const section = DRAFT_SECTIONS[idx];
+    if (onProgress) onProgress(`Working through ${section.label}… (${idx + 1} of ${DRAFT_SECTIONS.length})`);
+
+    const already = collected.length
+      ? `\n\nALREADY SUGGESTED by earlier sections — do NOT repeat any of these:\n${collected.map((i) => i.name).join(", ")}`
+      : "";
+
+    const prompt = `You help a family pack for holidays. Two adults, two children with complex needs and medical requirements.
+
+${context}
+
+YOUR SECTION THIS TIME: ${section.label}
+${section.brief}${already}
+
+Cover this section thoroughly. Return ONLY a JSON array, no prose, no fences. Up to ${section.max} objects. Compact keys:
+n = item name (short)
+r = source room, ONLY from: ${rooms.join(", ")}
+b = target bag, ONLY from: ${bags.join(", ")}
+q = quantity (number)
+p = true only if it is prescription medication
+l = true only if it can't be packed until the morning (fridge, freezer, charging, in daily use)
+x = short note, only where it genuinely helps. Empty string otherwise.`;
+
+    try {
+      const raw = await callClaude(prompt, 1400, onProgress);
+      raw.forEach((o) => {
+        const name = String(o.n || "").slice(0, 80);
+        if (!name) return;
+        const key = norm(name);
+        if (seen.has(key)) return; // section overlap, keep the first
+        seen.add(key);
+        collected.push({
+          name,
+          room_source: o.r || rooms[0],
+          assigned_bag: o.b || bags[0],
+          quantity: Number(o.q) || 1,
+          is_prescription: !!o.p,
+          last_minute: !!o.l,
+          notes_or_special_instructions: o.x || "",
+        });
+      });
+    } catch (e) {
+      failures.push(section.label);
+    }
+  }
+
+  if (!collected.length) {
+    throw new Error(
+      failures.length
+        ? `Couldn't draft any sections. ${failures.length === DRAFT_SECTIONS.length ? "All of them failed" : "Failed on: " + failures.join(", ")}. Check your connection and API key, then try again.`
+        : "The AI returned nothing usable. Try again."
+    );
+  }
+
+  return { items: collected, failures };
+}
+
+
+async function draftJobs({ month, days, transport, needs, history, kind, existing }) {
+  const kindBrief = {
+    sort: "admin and arrangements to sort in the weeks before leaving — bookings, assistance, equipment fixings, insurance, medical letters, pet care, prescriptions",
+    buy: "things to buy or reorder before leaving",
+    leaving: "the final checks in the last ten minutes before leaving the house, in the order you'd do them",
+  }[kind];
+  const existingList = existing?.length ? existing.map((t) => `- ${t}`).join("\n") : "none yet";
+  const raw = await callClaude(`A family with two adults and two children with special needs is going away: ${month}, ${days} days, by ${transport}.
+CHILDREN'S NEEDS: ${needs || "not specified"}
+PAST TRIPS AND WHAT THEY LEARNED:
+${history || "none"}
+
+ALREADY ON THIS TRIP'S LIST — do not suggest any of these again, including close rewordings of them:
+${existingList}
+
+List ${kindBrief}.
+Return ONLY a JSON array, max 14 objects, keys: t = short task title, x = short note or empty string. No prose, no fences.`, 700);
+  return raw.map((o) => ({ title: String(o.t || "").slice(0, 90), notes: o.x || "" })).filter((t) => t.title);
+}
+
+/* ---------------------------- UI atoms ----------------------------- */
+
+const inputCls = "w-full rounded-xl border-2 border-slate-300 bg-white px-3 py-3 text-base text-slate-900 focus:border-teal-600 focus:outline-none";
+const btn = "flex items-center justify-center gap-2 rounded-xl px-4 py-3 text-sm font-bold transition active:scale-95";
+
+const Field = ({ label, children }) => (
+  <label className="mb-4 block">
+    <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-500">{label}</span>
+    {children}
+  </label>
+);
+
+/* A real dropdown of existing names, plus a one-tap way to add a brand new
+   one — datalist inputs don't show their options until you start typing,
+   which is why this exists instead. */
+function PickOrAdd({ value, options, onChange, placeholder }) {
+  const [adding, setAdding] = useState(false);
+  const [draft, setDraft] = useState("");
+  if (adding) {
+    return (
+      <div className="flex gap-2">
+        <input
+          autoFocus
+          className={inputCls}
+          placeholder={placeholder || "New name"}
+          value={draft}
+          onChange={(e) => setDraft(e.target.value)}
+          onKeyDown={(e) => {
+            if (e.key === "Enter" && draft.trim()) { onChange(draft.trim()); setAdding(false); setDraft(""); }
+            if (e.key === "Escape") { setAdding(false); setDraft(""); }
+          }}
+        />
+        <button
+          onClick={() => { if (draft.trim()) { onChange(draft.trim()); setAdding(false); setDraft(""); } }}
+          className={`${btn} shrink-0 bg-slate-900 px-4 text-white`}
+        >
+          <Check size={16} strokeWidth={3} />
+        </button>
+        <button onClick={() => { setAdding(false); setDraft(""); }} className={`${btn} shrink-0 border-2 border-slate-300 bg-white px-4`}>
+          <X size={16} />
+        </button>
+      </div>
+    );
+  }
+  return (
+    <select
+      className={inputCls}
+      value={options.includes(value) ? value : ""}
+      onChange={(e) => { if (e.target.value === "__add__") setAdding(true); else onChange(e.target.value); }}
+    >
+      {!options.includes(value) && value && <option value="">{value} (not in list)</option>}
+      {options.map((o) => <option key={o} value={o}>{o}</option>)}
+      <option value="__add__">+ Add new…</option>
+    </select>
+  );
+}
+
+/* A quantity stepper that never fights the person typing — the box can sit
+   empty while editing, and only snaps back to 1 once they look away. */
+function QuantityInput({ value, onChange }) {
+  const [text, setText] = useState(String(value));
+  useEffect(() => { setText(String(value)); }, [value]);
+  const step = (delta) => onChange(Math.max(1, (Number(value) || 1) + delta));
+  return (
+    <div className="flex items-center gap-2">
+      <button onClick={() => step(-1)} className="rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-lg font-bold" aria-label="Decrease">−</button>
+      <input
+        type="number"
+        min="1"
+        className={`${inputCls} text-center`}
+        value={text}
+        onChange={(e) => setText(e.target.value)}
+        onBlur={() => { const n = parseInt(text, 10); onChange(n > 0 ? n : 1); setText(String(n > 0 ? n : 1)); }}
+      />
+      <button onClick={() => step(1)} className="rounded-xl border-2 border-slate-300 bg-white px-4 py-3 text-lg font-bold" aria-label="Increase">+</button>
+    </div>
+  );
+}
+
+function Sheet({ open, title, onClose, children }) {
+  if (!open) return null;
+  return (
+    <div className="fixed inset-0 z-50 flex flex-col justify-end bg-slate-900 bg-opacity-50">
+      <div className="max-h-full w-full overflow-y-auto rounded-t-3xl border-t-4 border-slate-900 bg-slate-50 pb-12">
+        <div className="sticky top-0 z-10 flex items-center justify-between border-b-2 border-slate-200 bg-slate-50 px-4 py-3">
+          <h2 className="text-base font-bold">{title}</h2>
+          <button onClick={onClose} className="rounded-full border-2 border-slate-300 p-2 text-slate-600" aria-label="Close"><X size={18} /></button>
+        </div>
+        <div className="px-4 py-4">{children}</div>
+      </div>
+    </div>
+  );
+}
+
+function Meter({ done, total }) {
+  const pct = total ? Math.round((done / total) * 100) : 0;
+  return (
+    <div className="flex items-center gap-3">
+      <div className="h-2 flex-1 overflow-hidden rounded-full bg-slate-200">
+        <div className="h-full rounded-full bg-teal-600 transition-all duration-500" style={{ width: `${pct}%` }} />
+      </div>
+      <span className="w-14 text-right text-xs font-bold tabular-nums text-slate-500">{done}/{total}</span>
+    </div>
+  );
+}
+
+const initials = (n) => (n || "?").split(/\s+/).map((w) => w[0]).join("").slice(0, 2).toUpperCase();
+
+function PackerDot({ name, onClick }) {
+  if (!name) return null;
+  const tone = { 0: "bg-slate-900", 1: "bg-teal-700", 2: "bg-slate-400", 3: "bg-amber-600", 4: "bg-slate-600" };
+  const idx = Math.abs([...name].reduce((a, c) => a + c.charCodeAt(0), 0)) % 5;
+  return (
+    <button onClick={onClick} title={name}
+      className={`flex h-6 w-6 shrink-0 items-center justify-center rounded-full text-xs font-bold text-white ${tone[idx]}`}>
+      {initials(name)}
+    </button>
+  );
+}
+
+/* ------------------------------- app ------------------------------- */
+
+function App() {
+  const seed = useRef(demoSeed()).current;
+
+  const [settings, setSettings] = useState({ url: "", key: "" });
+  const [client, setClient] = useState(null);
+  const [status, setStatus] = useState("demo");
+  const [statusMsg, setStatusMsg] = useState("");
+  const [busy, setBusy] = useState("");
+
+  const [trips, setTrips] = useState(seed.trips);
+  const [items, setItems] = useState(seed.items);
+  const [tasks, setTasks] = useState(seed.tasks);
+  const [contacts, setContacts] = useState(seed.contacts);
+  const [photos, setPhotos] = useState(seed.photos);
+  const [activeTripId, setActiveTripId] = useState(seed.activeTripId);
+
+  const [rooms, setRooms] = useState(DEFAULT_ROOMS);
+  const [bags, setBags] = useState(DEFAULT_BAGS);
+  const [packers, setPackers] = useState(DEFAULT_PACKERS);
+  const [me, setMe] = useState("Me");
+
+  const [tab, setTab] = useState("list");
+  const [view, setView] = useState("gather");
+  const [filterPacker, setFilterPacker] = useState("all");
+  const [hidePacked, setHidePacked] = useState(false);
+  const [search, setSearch] = useState("");
+  const [collapsed, setCollapsed] = useState({});
+
+  /* Which groups are folded up is a per-device viewing preference, not
+     shared data — but it should survive closing the app, otherwise a
+     150-item list means re-collapsing the same rooms every time. */
+  const setCollapsedPersisted = (next) => {
+    setCollapsed(next);
+    store.set("collapsed-groups", next);
+  };
+
+  const [libraryCollapsed, setLibraryCollapsed] = useState({});
+  const setLibraryCollapsedPersisted = (next) => {
+    setLibraryCollapsed(next);
+    store.set("library-collapsed-groups", next);
+  };
+
+  const [sheet, setSheet] = useState(null); // settings | lists | newtrip | past | add | review | rx | photo
+  const [editing, setEditing] = useState(null);
+  const [assigning, setAssigning] = useState(null);
+  const [archivedLibraryItems, setArchivedLibraryItems] = useState([]); // normalised names, hidden from the library only
+  const [libraryOpenSearch, setLibraryOpenSearch] = useState("");
+  const recentEdits = useRef(new Map());
+
+  /* --- saved preferences --- */
+  useEffect(() => {
+    (async () => {
+      const p = await store.get("place-names");
+      if (p) {
+        // Local fallback for demo mode, and to seed the shared row the very
+        // first time this phone connects (see connect(), which only seeds
+        // from local values if Supabase's app_settings row doesn't exist yet).
+        if (p.rooms?.length) setRooms(p.rooms);
+        if (p.bags?.length) setBags(p.bags);
+        if (p.packers?.length) setPackers(p.packers);
+      }
+      const myName = await store.get("my-name");
+      if (myName) setMe(myName);
+      else if (p?.me) setMe(p.me); // migrate from the old combined storage key
+
+      const s = await store.get("supabase-settings");
+      if (s?.url && s?.key) { setSettings(s); connect(s.url, s.key, { rooms: p?.rooms, bags: p?.bags, packers: p?.packers }); }
+
+      const arch = await store.get("archived-library-items");
+      if (Array.isArray(arch)) setArchivedLibraryItems(arch);
+
+      const savedCollapsed = await store.get("collapsed-groups");
+      if (savedCollapsed && typeof savedCollapsed === "object") setCollapsed(savedCollapsed);
+
+      const savedLibCollapsed = await store.get("library-collapsed-groups");
+      if (savedLibCollapsed && typeof savedLibCollapsed === "object") setLibraryCollapsed(savedLibCollapsed);
+    })();
+  }, []);
+
+  const savePlaces = async (next) => {
+    const merged = { rooms, bags, packers, ...next };
+    if (next.rooms) setRooms(next.rooms);
+    if (next.bags) setBags(next.bags);
+    if (next.packers) setPackers(next.packers);
+    if (next.me) setMe(next.me); // "me" stays a personal, per-device preference
+    if (client) {
+      try {
+        await client.upsert("app_settings", { id: "shared", rooms: merged.rooms, bags: merged.bags, packers: merged.packers });
+      } catch {
+        enqueue({ kind: "upsert", table: "app_settings", row: { id: "shared", rooms: merged.rooms, bags: merged.bags, packers: merged.packers } });
+        drainQueue();
+      }
+    } else {
+      // demo mode, no Supabase connected — keep the old local fallback
+      await store.set("place-names", merged);
+    }
+    if (next.me) await store.set("my-name", next.me);
+  };
+
+  const archiveLibraryItem = async (key) => {
+    const next = [...new Set([...archivedLibraryItems, key])];
+    setArchivedLibraryItems(next);
+    await store.set("archived-library-items", next);
+  };
+  const unarchiveLibraryItem = async (key) => {
+    const next = archivedLibraryItems.filter((k) => k !== key);
+    setArchivedLibraryItems(next);
+    await store.set("archived-library-items", next);
+  };
+
+  const connect = useCallback(async (url, key, seed) => {
+    setBusy("connect");
+    try {
+      const c = makeClient(url, key);
+      const [t, i, k, ct, ph, appSettings] = await Promise.all([
+        c.all("trips"), c.all("items"), c.all("tasks"), c.all("contacts"), c.all("photos"),
+        c.all("app_settings").catch(() => []), // table may not exist yet on an older setup
+      ]);
+      setClient(c);
+      setTrips((t || []).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")));
+      setItems(i || []); setTasks(k || []); setContacts(ct || []); setPhotos(ph || []);
+      setActiveTripId((t || [])[0]?.id ?? null);
+
+      /* Rooms/bags/packers used to live only in each phone's own storage,
+         which is how two phones ended up with different lists. There's now
+         one shared row in Supabase — but the very first phone to connect
+         after this change effectively "wins" and becomes the template for
+         both, which can silently drop names the other phone actually needs.
+         To make that impossible: always reconcile the shared list against
+         what's ACTUALLY used on real items, which can never be wrong or
+         stale, and add back anything genuinely missing. This runs every
+         connect, so the list heals itself rather than depending on which
+         phone got there first. */
+      const usedRooms = [...new Set((i || []).map((x) => x.room_source).filter(Boolean))];
+      const usedBags = [...new Set((i || []).map((x) => x.assigned_bag).filter(Boolean))];
+
+      const existing = (appSettings || [])[0];
+      let finalRooms, finalBags, finalPackers, needsWrite = false;
+
+      if (existing) {
+        finalRooms = existing.rooms?.length ? existing.rooms : DEFAULT_ROOMS;
+        finalBags = existing.bags?.length ? existing.bags : DEFAULT_BAGS;
+        finalPackers = existing.packers?.length ? existing.packers : DEFAULT_PACKERS;
+      } else {
+        finalRooms = seed?.rooms?.length ? seed.rooms : DEFAULT_ROOMS;
+        finalBags = seed?.bags?.length ? seed.bags : DEFAULT_BAGS;
+        finalPackers = seed?.packers?.length ? seed.packers : DEFAULT_PACKERS;
+        needsWrite = true;
+      }
+
+      const missingRooms = usedRooms.filter((r) => !finalRooms.includes(r));
+      const missingBags = usedBags.filter((b) => !finalBags.includes(b));
+      if (missingRooms.length) { finalRooms = [...finalRooms, ...missingRooms]; needsWrite = true; }
+      if (missingBags.length) { finalBags = [...finalBags, ...missingBags]; needsWrite = true; }
+
+      setRooms(finalRooms); setBags(finalBags); setPackers(finalPackers);
+
+      if (needsWrite) {
+        try { await c.upsert("app_settings", { id: "shared", rooms: finalRooms, bags: finalBags, packers: finalPackers }); }
+        catch { /* app_settings table missing or unreachable; local values still work for this session */ }
+      }
+
+      setStatus("live"); setStatusMsg("");
+      await store.set("supabase-settings", { url, key });
+    } catch (e) {
+      setStatus("error");
+      const raw = String(e?.message || e);
+      let hint = "";
+      if (/Failed to fetch|NetworkError|Load failed/i.test(raw)) hint = "The URL didn't resolve at all — check it's exactly the Project URL, ending in .supabase.co";
+      else if (/JWT|apikey|Invalid API key|401|403/i.test(raw)) hint = "The project was found, but the key was rejected. Use the publishable key (sb_publishable_…) or the legacy anon key.";
+      else if (/does not exist|42P01|404|Not Found/i.test(raw)) hint = "Connected fine, but a table is missing. Re-run the setup SQL.";
+      setStatusMsg(`${hint || "Couldn't connect."}\n\nExact error: ${raw.slice(0, 300)}`);
+    }
+    setBusy("");
+  }, []);
+
+  /* --- keep both phones in step --- */
+  useEffect(() => {
+    if (!client) return;
+    const tick = setInterval(async () => {
+      if (readQueue().length) return; // don't pull server state over unsent local changes
+      try {
+        const [i, k, ct, t, ph, appSettings] = await Promise.all([
+          client.all("items"), client.all("tasks"), client.all("contacts"), client.all("trips"), client.all("photos"),
+          client.all("app_settings").catch(() => null),
+        ]);
+        const now = Date.now();
+        const keepMine = (fresh, prev) => {
+          const held = new Map();
+          prev.forEach((x) => { const ts = recentEdits.current.get(x.id); if (ts && now - ts < 6000) held.set(x.id, x); });
+          return (fresh || []).map((x) => held.get(x.id) || x);
+        };
+        setItems((p) => keepMine(i, p));
+        setTasks((p) => keepMine(k, p));
+        setContacts((p) => keepMine(ct, p));
+        setTrips((p) => keepMine(t, p).sort((a, b) => (b.created_at || "").localeCompare(a.created_at || "")));
+        setPhotos(ph || []);
+        /* Pick up rooms/bags/packers added on the other phone, and keep the
+           list self-healing against whatever's genuinely used on real items
+           — same reconciliation as on connect, so this can't drift again. */
+        const shared = (appSettings || [])[0];
+        if (shared) {
+          const usedRooms = [...new Set((i || []).map((x) => x.room_source).filter(Boolean))];
+          const usedBags = [...new Set((i || []).map((x) => x.assigned_bag).filter(Boolean))];
+          let r = shared.rooms?.length ? shared.rooms : DEFAULT_ROOMS;
+          let b = shared.bags?.length ? shared.bags : DEFAULT_BAGS;
+          const missingR = usedRooms.filter((x) => !r.includes(x));
+          const missingB = usedBags.filter((x) => !b.includes(x));
+          if (missingR.length || missingB.length) {
+            r = missingR.length ? [...r, ...missingR] : r;
+            b = missingB.length ? [...b, ...missingB] : b;
+            try { await client.upsert("app_settings", { id: "shared", rooms: r, bags: b, packers: shared.packers || DEFAULT_PACKERS }); } catch {}
+          }
+          setRooms(r); setBags(b);
+          if (shared.packers?.length) setPackers(shared.packers);
+        }
+      } catch { /* next tick will catch up */ }
+    }, 4000);
+    return () => clearInterval(tick);
+  }, [client]);
+
+  /* --- offline-safe writes ---
+     Every write updates the screen immediately, then either goes straight
+     to Supabase or, if that fails (no signal, tunnel, etc.), is dropped into
+     a queue saved in localStorage. A background loop keeps trying that queue
+     every few seconds until it's empty, so nothing typed on a train is ever
+     silently lost — it just waits. */
+  const setters = { items: setItems, tasks: setTasks, contacts: setContacts, trips: setTrips, photos: setPhotos };
+  const [pendingCount, setPendingCount] = useState(0);
+  const [syncState, setSyncState] = useState("idle"); // idle | pending | error
+  const [syncError, setSyncError] = useState(null); // { message, table, kind, attempts, since }
+
+  const setQueue = (q) => { writeQueue(q); setPendingCount(q.length); };
+  const enqueue = (op) => setQueue([...readQueue(), { ...op, queuedAt: Date.now() }]);
+
+  useEffect(() => { setPendingCount(readQueue().length); }, []);
+
+  const runOp = async (op) => {
+    if (op.kind === "update") await client.update(op.table, op.id, op.patch);
+    else if (op.kind === "insert") await client.insert(op.table, op.rows);
+    else if (op.kind === "delete") await client.remove(op.table, op.id);
+    else if (op.kind === "upsert") await client.upsert(op.table, op.row);
+  };
+
+  const drainQueue = useCallback(async () => {
+    if (!client) return;
+    let q = readQueue();
+    if (!q.length) { setSyncState("idle"); setSyncError(null); return; }
+    setSyncState("pending");
+    while (q.length) {
+      try {
+        await runOp(q[0]);
+        q = q.slice(1);
+        setQueue(q);
+        setSyncError(null);
+      } catch (e) {
+        /* Keep the reason visible. A silent retry loop can hide a permanent
+           failure — a bad column, a value too big for its type — for days. */
+        const head = { ...q[0], attempts: (q[0].attempts || 0) + 1, lastError: String(e?.message || e).slice(0, 400) };
+        q = [head, ...q.slice(1)];
+        setQueue(q);
+        setSyncState("error");
+        setSyncError({
+          message: head.lastError,
+          table: head.table,
+          kind: head.kind,
+          attempts: head.attempts,
+          since: head.queuedAt,
+        });
+        return; // stop here, retry from the same failed op next time
+      }
+    }
+    setSyncState("idle");
+    setSyncError(null);
+  }, [client]);
+
+  const discardStuckOp = () => {
+    const q = readQueue();
+    if (!q.length) return;
+    setQueue(q.slice(1));
+    setSyncError(null);
+    setSyncState("idle");
+    setTimeout(drainQueue, 100);
+  };
+
+  const discardWholeQueue = () => {
+    setQueue([]);
+    setSyncError(null);
+    setSyncState("idle");
+  };
+
+  useEffect(() => {
+    if (!client) return;
+    drainQueue();
+    const onOnline = () => drainQueue();
+    window.addEventListener("online", onOnline);
+    const retry = setInterval(drainQueue, 5000);
+    return () => { window.removeEventListener("online", onOnline); clearInterval(retry); };
+  }, [client, drainQueue]);
+
+  const patch = async (table, id, p) => {
+    recentEdits.current.set(id, Date.now());
+    setters[table]((prev) => prev.map((r) => (r.id === id ? { ...r, ...p } : r)));
+    if (!client) return;
+    try { await client.update(table, id, p); }
+    catch { enqueue({ kind: "update", table, id, patch: p }); drainQueue(); }
+  };
+  const drop = async (table, id) => {
+    setters[table]((prev) => prev.filter((r) => r.id !== id));
+    if (!client) return;
+    try { await client.remove(table, id); }
+    catch { enqueue({ kind: "delete", table, id }); drainQueue(); }
+  };
+  const add = async (table, rows, defaults = {}) => {
+    const full = rows.map((r) => ({ id: uid(), trip_id: activeTripId, ...defaults, ...r }));
+    setters[table]((prev) => [...prev, ...full]);
+    if (!client) return full;
+    try { await client.insert(table, full); }
+    catch { enqueue({ kind: "insert", table, rows: full }); drainQueue(); }
+    return full;
+  };
+
+  const addItems = async (rows, tripId = activeTripId) =>
+    add("items", rows.map((r) => ({
+      trip_id: tripId, is_packed: false, quantity: 1, notes_or_special_instructions: "",
+      packer: "Either of us", is_flagged: false, flag_note: "", is_prescription: false,
+      last_minute: false, room_source: rooms[0], assigned_bag: bags[0], ...r,
+    })));
+
+  const addTrip = async (t) => {
+    const trip = { id: uid(), created_at: new Date().toISOString(), review: null, ...t };
+    setTrips((p) => [trip, ...p]);
+    setActiveTripId(trip.id);
+    if (client) { try { await client.insert("trips", [trip]); } catch {} }
+    return trip;
+  };
+
+  const renameEverywhere = async (field, from, to) => {
+    const hits = items.filter((i) => i[field] === from);
+    setItems((p) => p.map((i) => (i[field] === from ? { ...i, [field]: to } : i)));
+    if (client) for (const i of hits) { try { await client.update("items", i.id, { [field]: to }); } catch {} }
+    return hits.length;
+  };
+  const countUsing = (field, v) => items.filter((i) => i[field] === v).length;
+
+  const bulkPacker = async (list, packer) => {
+    const ids = new Set(list.map((i) => i.id));
+    setItems((p) => p.map((i) => (ids.has(i.id) ? { ...i, packer } : i)));
+    if (client) for (const i of list) { try { await client.update("items", i.id, { packer }); } catch {} }
+  };
+
+  const resetTicks = async () => {
+    const hits = items.filter((i) => i.trip_id === activeTripId && i.is_packed);
+    setItems((p) => p.map((i) => (i.trip_id === activeTripId ? { ...i, is_packed: false } : i)));
+    if (client) for (const i of hits) { try { await client.update("items", i.id, { is_packed: false }); } catch {} }
+  };
+
+  const copyWholeTrip = async (srcId) => {
+    const src = trips.find((t) => t.id === srcId);
+    if (!src) return;
+    const t = await addTrip({ name: `${src.name} (again)`, month: src.month, days: src.days, transport: src.transport, notes: src.notes });
+    await addItems(items.filter((i) => i.trip_id === srcId).map((i) => ({
+      name: i.name, room_source: i.room_source, assigned_bag: i.assigned_bag, quantity: i.quantity,
+      notes_or_special_instructions: i.notes_or_special_instructions, packer: i.packer,
+      is_prescription: i.is_prescription, last_minute: i.last_minute,
+    })), t.id);
+    const srcTasks = tasks.filter((x) => x.trip_id === srcId);
+    if (srcTasks.length) {
+      const rows = srcTasks.map((x) => ({ id: uid(), trip_id: t.id, kind: x.kind, title: x.title, notes: x.notes, done: false, packer: x.packer, position: x.position }));
+      setTasks((p) => [...p, ...rows]);
+      if (client) { try { await client.insert("tasks", rows); } catch {} }
+    }
+    const srcContacts = contacts.filter((c) => c.trip_id === srcId);
+    if (srcContacts.length) {
+      const rows = srcContacts.map((c) => ({ ...c, id: uid(), trip_id: t.id }));
+      setContacts((p) => [...p, ...rows]);
+      if (client) { try { await client.insert("contacts", rows); } catch {} }
+    }
+  };
+
+  /* --- derived --- */
+  const activeTrip = trips.find((t) => t.id === activeTripId) || null;
+  const tripItems = useMemo(() => items.filter((i) => i.trip_id === activeTripId), [items, activeTripId]);
+  const tripTasks = useMemo(() => tasks.filter((t) => t.trip_id === activeTripId), [tasks, activeTripId]);
+  const tripContacts = useMemo(() => contacts.filter((c) => c.trip_id === activeTripId), [contacts, activeTripId]);
+  const packedCount = tripItems.filter((i) => i.is_packed).length;
+  const flagged = tripItems.filter((i) => i.is_flagged);
+
+  const visible = useMemo(() => {
+    let list = view === "manifest" ? tripItems.filter((i) => i.is_packed) : tripItems;
+    if (filterPacker !== "all") list = list.filter((i) => i.packer === filterPacker || i.packer === "Either of us");
+    if (hidePacked && view !== "manifest") list = list.filter((i) => !i.is_packed);
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter((i) => (i.name + " " + (i.notes_or_special_instructions || "")).toLowerCase().includes(q));
+    return list;
+  }, [tripItems, view, filterPacker, hidePacked, search]);
+
+  const groups = useMemo(() => {
+    const order = view === "gather" ? rooms : bags;
+    const keyOf = (i) => (view === "gather" ? i.room_source || "Unsorted" : i.assigned_bag || "No bag yet");
+    const map = new Map();
+    visible.forEach((i) => { const k = keyOf(i); if (!map.has(k)) map.set(k, []); map.get(k).push(i); });
+    return [...map.entries()]
+      .sort((a, b) => {
+        const ia = order.indexOf(a[0]), ib = order.indexOf(b[0]);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib) || a[0].localeCompare(b[0]);
+      })
+      /* Packed items sink to the bottom of their group, so what's left to
+         gather stays at the top. In the "In bags" view everything is packed,
+         so ordering there stays alphabetical. */
+      .map(([label, list]) => [
+        label,
+        [...list].sort((x, y) => {
+          if (view !== "manifest" && !!x.is_packed !== !!y.is_packed) return x.is_packed ? 1 : -1;
+          return (x.name || "").localeCompare(y.name || "");
+        }),
+      ]);
+  }, [visible, view, rooms, bags]);
+
+  const jobCounts = JOB_KINDS.map((k) => {
+    const l = tripTasks.filter((t) => t.kind === k.id);
+    return { ...k, done: l.filter((t) => t.done).length, total: l.length };
+  });
+
+  /* ------------------------------ render ---------------------------- */
+
+  return (
+    <div className="min-h-screen bg-slate-100 font-sans text-slate-900">
+      <div className="mx-auto max-w-2xl pb-24">
+
+        <header className="border-b-2 border-slate-900 bg-white px-4 pb-3 pt-4">
+          <div className="flex items-start justify-between gap-3">
+            <div className="min-w-0">
+              <p className="text-xs font-bold uppercase tracking-widest text-teal-700">Packing for</p>
+              <h1 className="truncate text-xl font-bold tracking-tight">{activeTrip ? activeTrip.name : "No trip yet"}</h1>
+              {activeTrip && <p className="text-xs text-slate-500">{activeTrip.month} · {activeTrip.days} days · {activeTrip.transport}</p>}
+            </div>
+            <div className="flex shrink-0 gap-2">
+              <button onClick={() => setSheet("newtrip")} className="rounded-xl border-2 border-slate-300 p-2.5" aria-label="New trip"><Sparkles size={18} /></button>
+              <button onClick={() => setSheet("past")} className="rounded-xl border-2 border-slate-300 p-2.5" aria-label="Trips"><History size={18} /></button>
+              <button onClick={() => setSheet("settings")} className="rounded-xl border-2 border-slate-300 p-2.5" aria-label="Settings"><Settings size={18} /></button>
+            </div>
+          </div>
+          <div className="mt-3"><Meter done={packedCount} total={tripItems.length} /></div>
+          <div className="mt-2 flex items-center gap-2 text-xs font-semibold">
+            {status === "live"
+              ? <><Wifi size={13} className="text-teal-700" /><span className="text-teal-700">Synced</span></>
+              : <><WifiOff size={13} className="text-amber-600" /><span className="text-amber-700">Demo mode — this device only</span></>}
+            {status === "live" && pendingCount > 0 && (
+              <span className="flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-amber-800">
+                <CloudOff size={12} /> {pendingCount} waiting to sync
+              </span>
+            )}            {flagged.length > 0 && (
+              <span className="ml-auto flex items-center gap-1 rounded-md bg-amber-100 px-2 py-0.5 text-amber-800">
+                <Flag size={12} /> {flagged.length} flagged
+              </span>
+            )}
+          </div>
+
+          {syncError && syncError.attempts >= 3 && (
+            <div className="mt-3 rounded-xl border-2 border-red-300 bg-red-50 p-3">
+              <p className="flex items-center gap-2 text-sm font-bold text-red-800">
+                <CloudOff size={15} /> Something won't save
+              </p>
+              <p className="mt-1 text-xs text-red-700">
+                A change to <strong>{syncError.table}</strong> has failed {syncError.attempts} times and is holding up {pendingCount} change{pendingCount === 1 ? "" : "s"} behind it.
+              </p>
+              <p className="mt-2 break-words rounded-lg bg-white p-2 font-mono text-xs text-red-800">{syncError.message}</p>
+              <div className="mt-2 flex gap-2">
+                <button onClick={discardStuckOp} className={`${btn} flex-1 border-2 border-red-300 bg-white text-xs text-red-800`}>
+                  Skip this one
+                </button>
+                <button onClick={discardWholeQueue} className={`${btn} flex-1 border-2 border-red-300 bg-white text-xs text-red-800`}>
+                  Discard all {pendingCount}
+                </button>
+              </div>
+              <p className="mt-2 text-xs text-red-600">
+                Skipping loses that one change. Everything already saved is unaffected.
+              </p>
+            </div>
+          )}
+        </header>
+
+        {tab === "list" && (
+          <>
+            <div className="sticky top-0 z-30 border-b-2 border-slate-900 bg-slate-100 px-3 pb-2 pt-2">
+              <div className="grid grid-cols-3 gap-2">
+                {[
+                  { id: "gather", label: "Gather", sub: "by room", Icon: Home },
+                  { id: "pack", label: "Pack", sub: "by bag", Icon: Luggage },
+                  { id: "manifest", label: "In bags", sub: "packed only", Icon: PackageCheck },
+                ].map(({ id, label, sub, Icon }) => (
+                  <button key={id} onClick={() => setView(id)}
+                    className={`rounded-lg border-2 px-2 py-2 text-center ${view === id ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                    <Icon size={15} className="mx-auto" />
+                    <div className="text-xs font-bold leading-tight">{label}</div>
+                    <div className="text-xs leading-tight opacity-70">{sub}</div>
+                  </button>
+                ))}
+              </div>
+
+              <div className="mt-2 flex items-center gap-2">
+                <div className="relative flex-1">
+                  <Search size={14} className="absolute left-2 top-2.5 text-slate-400" />
+                  <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find an item"
+                    className="w-full rounded-lg border-2 border-slate-300 bg-white py-1.5 pl-7 pr-2 text-sm" />
+                </div>
+                <button onClick={() => setHidePacked(!hidePacked)}
+                  className={`rounded-lg border-2 px-2 py-1.5 text-xs font-bold ${hidePacked ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                  {hidePacked ? "Showing to-do" : "Show all"}
+                </button>
+              </div>
+
+              <div className="mt-2 flex gap-1 overflow-x-auto pb-1">
+                {["all", ...packers].map((p) => (
+                  <button key={p} onClick={() => setFilterPacker(p)}
+                    className={`shrink-0 rounded-full border-2 px-3 py-1 text-xs font-bold ${filterPacker === p ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                    {p === "all" ? "Everyone" : p}
+                  </button>
+                ))}
+              </div>
+            </div>
+
+            <main className="space-y-4 px-3 py-3">
+              {!activeTrip && (
+                <Empty title="Start with a trip." body="Tell the app when you're going and for how long, and it'll draft the list from what you packed before."
+                  action={<button onClick={() => setSheet("newtrip")} className={`${btn} w-full bg-slate-900 text-white`}><Sparkles size={16} /> New trip</button>} />
+              )}
+              {activeTrip && groups.length === 0 && (
+                <Empty title={view === "manifest" ? "Nothing packed yet." : search ? "Nothing matches." : "This list is empty."}
+                  body={view === "manifest" ? "Tick items off and they'll appear here, sorted by bag." : "Add items yourself, or pull them in from a past trip."} />
+              )}
+
+              {groups.map(([label, list]) => (
+                <Group
+                  key={label} label={label} list={list} view={view}
+                  collapsed={!!collapsed[view + label]}
+                  toggle={() => setCollapsedPersisted({ ...collapsed, [view + label]: !collapsed[view + label] })}
+                  onTick={(i) => patch("items", i.id, { is_packed: !i.is_packed })}
+                  onOpen={setEditing}
+                  onAssignGroup={() => setAssigning({ label, list })}
+                  photo={view === "manifest" ? photos.find((p) => p.trip_id === activeTripId && p.bag === label) : null}
+                  onPhoto={view === "manifest" ? () => setSheet({ kind: "photo", bag: label }) : null}
+                />
+              ))}
+            </main>
+          </>
+        )}
+
+        {tab === "jobs" && (
+          <JobsScreen
+            trip={activeTrip} tasks={tripTasks} packers={packers} counts={jobCounts}
+            history={historyText(trips, items)}
+            onToggle={(t) => patch("tasks", t.id, { done: !t.done })}
+            onAdd={(kind, rows) => add("tasks", rows.map((r, n) => ({
+              kind, done: false, packer: "Either of us",
+              /* Position just needs to sort after everything already there.
+                 Date.now() overflows a Postgres int, so count from the
+                 existing tasks instead. */
+              position: tripTasks.filter((t) => t.kind === kind).length + n,
+              ...r,
+            })))}
+            onPatch={(id, p) => patch("tasks", id, p)}
+            onDelete={(id) => drop("tasks", id)}
+          />
+        )}
+
+        {tab === "info" && (
+          <InfoScreen
+            trip={activeTrip} contacts={tripContacts}
+            onAdd={(rows) => add("contacts", rows)}
+            onPatch={(id, p) => patch("contacts", id, p)}
+            onDelete={(id) => drop("contacts", id)}
+          />
+        )}
+
+        {tab === "after" && (
+          <AfterScreen
+            trip={activeTrip} items={tripItems} tripTasks={tripTasks}
+            onSaveReview={(r) => patch("trips", activeTrip.id, { review: JSON.stringify(r) })}
+            onPatchItem={(id, p) => patch("items", id, p)}
+            onAddItem={(row) => addItems([{ ...row, is_prescription: true }])}
+            onAddMissedItem={(row) => addItems([{ ...row, was_missed: true, is_packed: false }])}
+            onAddMissedJob={({ title, kind }) => add("tasks", [{
+              kind, title, notes: "", done: false, packer: "Either of us", was_missed: true,
+              position: tripTasks.filter((t) => t.kind === kind).length,
+            }])}
+            onDeleteTask={(id) => drop("tasks", id)}
+            rooms={rooms} bags={bags}
+          />
+        )}
+      </div>
+
+      {/* bottom navigation */}
+      <nav className="fixed bottom-0 left-0 right-0 z-40 border-t-2 border-slate-900 bg-white">
+        <div className="mx-auto grid max-w-2xl grid-cols-6">
+          {[
+            { id: "list", label: "List", Icon: Luggage },
+            { id: "jobs", label: "Jobs", Icon: ListChecks, badge: jobCounts.reduce((a, k) => a + (k.total - k.done), 0) },
+            { id: "add", label: "Add", Icon: Plus },
+            { id: "library", label: "Library", Icon: BookOpen },
+            { id: "info", label: "Info", Icon: Phone },
+            { id: "after", label: "After", Icon: ClipboardList },
+          ].map(({ id, label, Icon, badge }) => (
+            <button key={id}
+              onClick={() => (id === "add" ? setSheet("add") : id === "library" ? setSheet("library") : setTab(id))}
+              disabled={(id === "add" || id === "library") && !activeTrip}
+              className={`relative flex flex-col items-center gap-0.5 py-2.5 text-xs font-bold ${tab === id ? "text-teal-700" : "text-slate-500"}`}>
+              <Icon size={18} />
+              {label}
+              {badge > 0 && <span className="absolute right-2 top-1 rounded-full bg-amber-500 px-1.5 text-xs text-white">{badge}</span>}
+            </button>
+          ))}
+        </div>
+      </nav>
+
+      {/* sheets */}
+      <EditItemSheet item={editing} rooms={rooms} bags={bags} packers={packers}
+        onAddRoom={(name) => savePlaces({ rooms: [...rooms, name] })}
+        onAddBag={(name) => savePlaces({ bags: [...bags, name] })}
+        onClose={() => setEditing(null)}
+        onSave={(p) => { patch("items", editing.id, p); setEditing(null); }}
+        onDelete={() => { drop("items", editing.id); setEditing(null); }} />
+
+      <AddItemSheet open={sheet === "add"} rooms={rooms} bags={bags} packers={packers} items={items}
+        onPasteList={() => setSheet("import")}
+        onAddRoom={(name) => savePlaces({ rooms: [...rooms, name] })}
+        onAddBag={(name) => savePlaces({ bags: [...bags, name] })}
+        onGoToLibrary={(name) => { setLibraryOpenSearch(name); setSheet("library"); }}
+        onClose={() => setSheet(null)} onAdd={(r) => { addItems([r]); setSheet(null); }} />
+
+      <AssignSheet group={assigning} packers={packers} onClose={() => setAssigning(null)}
+        onPick={(p) => { bulkPacker(assigning.list, p); setAssigning(null); }} />
+
+      <PhotoSheet open={sheet?.kind === "photo"} bag={sheet?.bag}
+        photo={photos.find((p) => p.trip_id === activeTripId && p.bag === sheet?.bag)}
+        onClose={() => setSheet(null)}
+        onSave={async (dataUrl, caption) => {
+          const existing = photos.find((p) => p.trip_id === activeTripId && p.bag === sheet.bag);
+          if (existing) await patch("photos", existing.id, { data_url: dataUrl, caption });
+          else await add("photos", [{ bag: sheet.bag, data_url: dataUrl, caption }]);
+          setSheet(null);
+        }}
+        onDelete={async () => {
+          const existing = photos.find((p) => p.trip_id === activeTripId && p.bag === sheet.bag);
+          if (existing) await drop("photos", existing.id);
+          setSheet(null);
+        }} />
+
+      <NewTripSheet open={sheet === "newtrip"} trips={trips} items={items} tasks={tasks} rooms={rooms} bags={bags}
+        onClose={() => setSheet(null)}
+        onCreate={async (trip, generated, carryJobs, carryMissed) => {
+          const t = await addTrip(trip);
+          if (generated?.length) await addItems(generated, t.id);
+          /* Things wished for last time arrive as ordinary items to pack —
+             the missed flag belongs to the trip where they were missed, not
+             this one, where they're simply on the list. */
+          if (carryMissed?.length) {
+            await addItems(carryMissed.map((i) => ({
+              name: i.name, room_source: i.room_source, assigned_bag: i.assigned_bag,
+              quantity: i.quantity || 1, notes_or_special_instructions: i.notes_or_special_instructions || "",
+              is_prescription: !!i.is_prescription, last_minute: !!i.last_minute, was_missed: false,
+            })), t.id);
+          }
+          /* Jobs repeat almost exactly trip to trip — insurance, the cat,
+             assistance bookings — so carry the last trip's across, unticked. */
+          if (carryJobs?.length) {
+            const rows = carryJobs.map((x, n) => ({
+              id: uid(), trip_id: t.id, kind: x.kind, title: x.title,
+              notes: x.notes, done: false, packer: x.packer, position: n,
+            }));
+            setTasks((p) => [...p, ...rows]);
+            if (client) { try { await client.insert("tasks", rows); } catch { enqueue({ kind: "insert", table: "tasks", rows }); } }
+          }
+          setSheet(null); setTab("list"); setView("gather");
+        }} />
+
+      <ImportSheet open={sheet === "import"} rooms={rooms} bags={bags} activeTrip={activeTrip}
+        onClose={() => setSheet(null)}
+        onImport={(rows) => { addItems(rows); setSheet(null); setTab("list"); }}
+        onImportWithTrip={async (tripFields, rows) => {
+          const t = await addTrip({ ...tripFields, notes: "" });
+          await addItems(rows, t.id);
+          setSheet(null); setTab("list"); setView("gather");
+        }} />
+
+      <LibrarySheet open={sheet === "library"} items={items} trips={trips} activeTripId={activeTripId}
+        collapsedGroups={libraryCollapsed} setCollapsedGroups={setLibraryCollapsedPersisted}
+        initialSearch={libraryOpenSearch}
+        archivedLibraryItems={archivedLibraryItems} onArchive={archiveLibraryItem} onUnarchive={unarchiveLibraryItem}
+        rooms={rooms} bags={bags} packers={packers}
+        onClose={() => setSheet(null)}
+        onAddToTrip={(rows) => addItems(rows)}
+        onEditEverywhere={async (ids, patchFields) => {
+          const idSet = new Set(ids);
+          setItems((p) => p.map((i) => (idSet.has(i.id) ? { ...i, ...patchFields } : i)));
+          for (const id of ids) {
+            recentEdits.current.set(id, Date.now());
+            if (client) {
+              try { await client.update("items", id, patchFields); }
+              catch { enqueue({ kind: "update", table: "items", id, patch: patchFields }); }
+            }
+          }
+          if (client) drainQueue();
+        }}
+        onDeleteEverywhere={async (ids) => {
+          const idSet = new Set(ids);
+          setItems((p) => p.filter((i) => !idSet.has(i.id)));
+          for (const id of ids) {
+            if (client) {
+              try { await client.remove("items", id); }
+              catch { enqueue({ kind: "delete", table: "items", id }); }
+            }
+          }
+          if (client) drainQueue();
+        }} />
+
+      <TripsSheet open={sheet === "past"} onNewTrip={() => setSheet("newtrip")} trips={trips} items={items} activeTripId={activeTripId}
+        onClose={() => setSheet(null)}
+        onSwitch={(id) => { setActiveTripId(id); setSheet(null); }}
+        onCopyItems={(rows) => addItems(rows)}
+        onCopyTrip={(id) => { copyWholeTrip(id); setSheet(null); }}
+        onResetTicks={() => { resetTicks(); setSheet(null); }} />
+
+      <ListsSheet open={sheet === "lists"} rooms={rooms} bags={bags} packers={packers} me={me}
+        onClose={() => setSheet(null)} save={savePlaces}
+        renameEverywhere={renameEverywhere} countUsing={countUsing} />
+
+      <SettingsSheet open={sheet === "settings"} settings={settings} setSettings={setSettings}
+        connect={connect} status={status} statusMsg={statusMsg} busy={busy === "connect"}
+        onClose={() => setSheet(null)} onOpenLists={() => setSheet("lists")} />
+    </div>
+  );
+}
+
+const Empty = ({ title, body, action }) => (
+  <div className="rounded-2xl border-2 border-dashed border-slate-300 p-6 text-center">
+    <p className="font-bold">{title}</p>
+    <p className="mt-1 text-sm text-slate-500">{body}</p>
+    {action && <div className="mt-4">{action}</div>}
+  </div>
+);
+
+/* --------------------------- list rendering ------------------------- */
+
+function Group({ label, list, view, collapsed, toggle, onTick, onOpen, onAssignGroup, photo, onPhoto }) {
+  const done = list.filter((i) => i.is_packed).length;
+  const pct = list.length ? (done / list.length) * 100 : 0;
+  const full = done === list.length;
+  return (
+    <section>
+      <div className="sticky top-32 z-20 mb-1 overflow-hidden rounded-lg border-2 border-slate-900 bg-white">
+        <div className={`absolute inset-y-0 left-0 transition-all duration-500 ${full ? "bg-teal-200" : "bg-teal-100"}`} style={{ width: `${pct}%` }} />
+        <div className="relative flex items-center gap-2 px-2 py-2">
+          <button onClick={toggle} className="flex min-w-0 flex-1 items-center gap-2 text-left">
+            {collapsed ? <ChevronRight size={15} /> : <ChevronDown size={15} />}
+            <span className="h-2 w-2 shrink-0 rounded-full border-2 border-slate-900 bg-slate-100" />
+            <h3 className="truncate text-xs font-bold uppercase tracking-wider">{label}</h3>
+            <span className="text-xs font-bold tabular-nums text-slate-600">{done}/{list.length}</span>
+            {full && <Check size={13} strokeWidth={3} className="text-teal-700" />}
+          </button>
+          {onPhoto && (
+            <button onClick={onPhoto} className="rounded-md border-2 border-slate-300 bg-white p-1.5 text-slate-600" aria-label="Photo of this bag">
+              {photo ? <img src={photo.data_url} alt="" className="h-4 w-4 rounded object-cover" /> : <Camera size={14} />}
+            </button>
+          )}
+          <button onClick={onAssignGroup} className="rounded-md border-2 border-slate-300 bg-white p-1.5 text-slate-600" aria-label="Assign this group">
+            <UserRound size={14} />
+          </button>
+        </div>
+      </div>
+
+      {!collapsed && (
+        <ul className="divide-y-2 divide-slate-100 overflow-hidden rounded-lg border-2 border-slate-300 bg-white">
+          {list.map((item) => (
+            <li key={item.id} className={`flex items-stretch ${item.is_flagged ? "border-l-4 border-amber-500" : ""}`}>
+              <button onClick={() => onTick(item)}
+                className={`flex w-12 shrink-0 items-center justify-center ${item.is_packed ? "bg-teal-600 text-white" : "bg-slate-50 text-slate-300"}`}
+                aria-label={item.is_packed ? "Not packed" : "Packed"}>
+                <Check size={20} strokeWidth={3} />
+              </button>
+              <button onClick={() => onOpen(item)} className="flex flex-1 items-center gap-2 px-2 py-2 text-left">
+                <div className="min-w-0 flex-1">
+                  <p className={`text-sm font-semibold leading-tight ${item.is_packed ? "text-slate-400 line-through" : ""}`}>
+                    {item.name}
+                    {item.quantity > 1 && <span className="ml-1 text-xs font-bold text-slate-500">×{item.quantity}</span>}
+                    {item.is_prescription && <Pill size={12} className="ml-1 inline text-teal-700" />}
+                    {item.last_minute && <Snowflake size={12} className="ml-1 inline text-sky-600" />}
+                  </p>
+                  <p className="truncate text-xs uppercase tracking-wide text-slate-400">
+                    {view === "gather" ? item.assigned_bag || "No bag yet" : item.room_source || "Unsorted"}
+                    {item.notes_or_special_instructions && <span className="ml-1 normal-case tracking-normal text-slate-500">· {item.notes_or_special_instructions}</span>}
+                  </p>
+                  {item.is_flagged && (
+                    <p className="mt-0.5 flex items-center gap-1 text-xs font-semibold text-amber-700">
+                      <Flag size={11} /> {item.flag_note || "Flagged"}
+                    </p>
+                  )}
+                </div>
+                <PackerDot name={item.packer} />
+              </button>
+            </li>
+          ))}
+        </ul>
+      )}
+    </section>
+  );
+}
+
+/* ------------------------------- jobs ------------------------------- */
+
+function JobsScreen({ trip, tasks, packers, counts, history, onToggle, onAdd, onPatch, onDelete }) {
+  const [kind, setKind] = useState("sort");
+  const [draftText, setDraftText] = useState("");
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [editing, setEditing] = useState(null);
+  const [selectMode, setSelectMode] = useState(false);
+  const [sel, setSel] = useState({});
+  const [confirmDelete, setConfirmDelete] = useState(false);
+  const [suggested, setSuggested] = useState(null); // array while reviewing, null otherwise
+  const [suggestedPicked, setSuggestedPicked] = useState({});
+
+  useEffect(() => { setSelectMode(false); setSel({}); setConfirmDelete(false); setSuggested(null); }, [kind]);
+
+  if (!trip) return <div className="p-4"><Empty title="No trip yet." body="Start a trip and the job lists live here." /></div>;
+
+  /* Done jobs sink to the bottom so the list stays about what's left to do,
+     while keeping their relative order within each half. */
+  const list = tasks
+    .filter((t) => t.kind === kind)
+    .sort((a, b) => {
+      if (!!a.done !== !!b.done) return a.done ? 1 : -1;
+      return (a.position || 0) - (b.position || 0);
+    });
+  const meta = JOB_KINDS.find((k) => k.id === kind);
+  const selectedIds = list.filter((t) => sel[t.id]).map((t) => t.id);
+
+  const suggest = async () => {
+    setLoading(true); setErr(""); setSuggested(null);
+    try {
+      const existingTitles = list.map((t) => t.title);
+      const rows = await draftJobs({
+        month: trip.month, days: trip.days, transport: trip.transport, needs: trip.notes,
+        history, kind, existing: existingTitles,
+      });
+      const have = new Set(existingTitles.map((t) => t.toLowerCase().replace(/[^a-z0-9]/g, "")));
+      const fresh = rows.filter((r) => !have.has(r.title.toLowerCase().replace(/[^a-z0-9]/g, "")));
+      if (!fresh.length) {
+        setErr("Nothing new to suggest — everything it thought of is already on your list.");
+      } else {
+        setSuggested(fresh);
+        setSuggestedPicked(Object.fromEntries(fresh.map((_, i) => [i, true])));
+      }
+    } catch (e) { setErr(e.message); }
+    setLoading(false);
+  };
+
+  const acceptSuggested = () => {
+    const chosen = suggested.filter((_, i) => suggestedPicked[i]);
+    if (chosen.length) onAdd(kind, chosen);
+    setSuggested(null);
+  };
+
+  const doBulkDelete = () => {
+    selectedIds.forEach((id) => onDelete(id));
+    setSel({});
+    setSelectMode(false);
+    setConfirmDelete(false);
+  };
+
+  return (
+    <div className="px-3 py-3">
+      <div className="mb-3 grid grid-cols-3 gap-2">
+        {counts.map((k) => (
+          <button key={k.id} onClick={() => setKind(k.id)}
+            className={`rounded-lg border-2 px-2 py-2 text-left ${kind === k.id ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+            <div className="text-xs font-bold leading-tight">{k.label}</div>
+            <div className="text-xs opacity-70">{k.done}/{k.total} done</div>
+          </button>
+        ))}
+      </div>
+      <div className="mb-3 flex items-center justify-between gap-2">
+        <p className="min-w-0 flex-1 text-xs text-slate-500">{meta.blurb}</p>
+        {list.length > 0 && (
+          <button onClick={() => { setSelectMode(!selectMode); setSel({}); setConfirmDelete(false); }}
+            className="shrink-0 text-xs font-bold text-teal-700">
+            {selectMode ? "Done" : "Select"}
+          </button>
+        )}
+      </div>
+
+      {selectMode && (
+        <div className="mb-3 flex gap-2">
+          <button onClick={() => setSel(Object.fromEntries(list.map((t) => [t.id, true])))}
+            className={`${btn} flex-1 border-2 border-slate-300 bg-white text-xs`}>Select all {list.length}</button>
+          <button onClick={() => setSel({})} className={`${btn} flex-1 border-2 border-slate-300 bg-white text-xs`}>Clear</button>
+        </div>
+      )}
+
+      <ul className="mb-3 divide-y-2 divide-slate-100 overflow-hidden rounded-lg border-2 border-slate-300 bg-white">
+        {list.map((t) => (
+          <li key={t.id} className="flex items-stretch">
+            {selectMode ? (
+              <button onClick={() => setSel({ ...sel, [t.id]: !sel[t.id] })}
+                className={`flex w-12 shrink-0 items-center justify-center ${sel[t.id] ? "bg-red-600 text-white" : "bg-slate-50 text-slate-300"}`}>
+                <Check size={20} strokeWidth={3} />
+              </button>
+            ) : (
+              <button onClick={() => onToggle(t)} className={`flex w-12 shrink-0 items-center justify-center ${t.done ? "bg-teal-600 text-white" : "bg-slate-50 text-slate-300"}`}>
+                <Check size={20} strokeWidth={3} />
+              </button>
+            )}
+            <button onClick={() => (selectMode ? setSel({ ...sel, [t.id]: !sel[t.id] }) : setEditing(t))} className="flex flex-1 items-center gap-2 px-2 py-2 text-left">
+              <div className="min-w-0 flex-1">
+                <p className={`text-sm font-semibold leading-tight ${!selectMode && t.done ? "text-slate-400 line-through" : ""}`}>{t.title}</p>
+                {t.notes && <p className="truncate text-xs text-slate-500">{t.notes}</p>}
+              </div>
+              <PackerDot name={t.packer} />
+            </button>
+          </li>
+        ))}
+        {list.length === 0 && <li className="px-3 py-6 text-center text-sm text-slate-500">Nothing here yet.</li>}
+      </ul>
+
+      {selectMode && selectedIds.length > 0 && (
+        <div className="mb-3">
+          {!confirmDelete ? (
+            <button onClick={() => setConfirmDelete(true)} className={`${btn} w-full border-2 border-red-300 bg-white text-red-700`}>
+              <Trash2 size={16} /> Delete {selectedIds.length} job{selectedIds.length === 1 ? "" : "s"}
+            </button>
+          ) : (
+            <div className="rounded-xl border-2 border-red-300 bg-red-50 p-3">
+              <p className="mb-2 text-sm font-bold text-red-800">Delete {selectedIds.length} job{selectedIds.length === 1 ? "" : "s"}?</p>
+              <p className="mb-2 text-xs text-red-700">This can't be undone.</p>
+              <div className="flex gap-2">
+                <button onClick={doBulkDelete} className={`${btn} flex-1 bg-red-700 text-white`}>Yes, delete</button>
+                <button onClick={() => setConfirmDelete(false)} className={`${btn} flex-1 border-2 border-slate-300 bg-white`}>Cancel</button>
+              </div>
+            </div>
+          )}
+        </div>
+      )}
+
+      <div className="flex gap-2">
+        <input className={inputCls} placeholder="Add a job" value={draftText} onChange={(e) => setDraftText(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && draftText.trim()) { onAdd(kind, [{ title: draftText.trim(), notes: "" }]); setDraftText(""); } }} />
+        <button onClick={() => { if (draftText.trim()) { onAdd(kind, [{ title: draftText.trim(), notes: "" }]); setDraftText(""); } }}
+          className={`${btn} shrink-0 bg-slate-900 px-5 text-white`}><Plus size={18} /></button>
+      </div>
+
+      {err && <p className="mt-3 rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{err}</p>}
+
+      {!suggested ? (
+        <button onClick={suggest} disabled={loading} className={`${btn} mt-3 w-full border-2 border-teal-700 bg-white text-teal-800 disabled:opacity-60`}>
+          {loading ? <><Loader2 size={16} className="animate-spin" /> Thinking…</> : <><Sparkles size={16} /> Suggest jobs for this trip</>}
+        </button>
+      ) : (
+        <div className="mt-3 rounded-xl border-2 border-teal-300 bg-teal-50 p-3">
+          <p className="mb-2 text-sm font-bold text-teal-900">{suggested.length} suggestion{suggested.length === 1 ? "" : "s"} — tick what you want</p>
+          <ul className="mb-3 space-y-1.5">
+            {suggested.map((s, i) => (
+              <li key={i}>
+                <button onClick={() => setSuggestedPicked({ ...suggestedPicked, [i]: !suggestedPicked[i] })}
+                  className={`flex w-full items-start gap-2 rounded-lg border-2 px-2 py-2 text-left ${suggestedPicked[i] ? "border-teal-600 bg-white" : "border-slate-200 bg-slate-100 opacity-60"}`}>
+                  <span className={`mt-0.5 flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${suggestedPicked[i] ? "border-teal-600 bg-teal-600 text-white" : "border-slate-300"}`}>
+                    {suggestedPicked[i] && <Check size={12} strokeWidth={3} />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">{s.title}</span>
+                    {s.notes && <span className="block text-xs text-slate-500">{s.notes}</span>}
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <div className="flex gap-2">
+            <button onClick={acceptSuggested} disabled={!Object.values(suggestedPicked).some(Boolean)}
+              className={`${btn} flex-1 bg-slate-900 text-white disabled:opacity-40`}>
+              Add {Object.values(suggestedPicked).filter(Boolean).length} job{Object.values(suggestedPicked).filter(Boolean).length === 1 ? "" : "s"}
+            </button>
+            <button onClick={() => setSuggested(null)} className={`${btn} flex-1 border-2 border-slate-300 bg-white`}>Discard all</button>
+          </div>
+        </div>
+      )}
+
+      <Sheet open={!!editing} title="Edit job" onClose={() => setEditing(null)}>
+        {editing && (
+          <>
+            <Field label="Job"><input className={inputCls} value={editing.title} onChange={(e) => setEditing({ ...editing, title: e.target.value })} /></Field>
+            <Field label="Note"><textarea rows="2" className={inputCls} value={editing.notes || ""} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} /></Field>
+            <Field label="Who's doing it">
+              <div className="flex flex-wrap gap-2">
+                {packers.map((p) => (
+                  <button key={p} onClick={() => setEditing({ ...editing, packer: p })}
+                    className={`rounded-full border-2 px-3 py-2 text-sm font-bold ${editing.packer === p ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white"}`}>{p}</button>
+                ))}
+              </div>
+            </Field>
+            <button onClick={() => { onPatch(editing.id, { title: editing.title, notes: editing.notes, packer: editing.packer }); setEditing(null); }}
+              className={`${btn} w-full bg-slate-900 text-white`}>Save changes</button>
+            <button onClick={() => { onDelete(editing.id); setEditing(null); }} className={`${btn} mt-3 w-full border-2 border-red-200 bg-white text-red-700`}>
+              <Trash2 size={16} /> Delete job
+            </button>
+          </>
+        )}
+      </Sheet>
+    </div>
+  );
+}
+
+/* ------------------------------- info ------------------------------- */
+
+function InfoScreen({ trip, contacts, onAdd, onPatch, onDelete }) {
+  const blank = { label: "", category: "Where we're staying", phone: "", reference: "", notes: "" };
+  const [editing, setEditing] = useState(null);
+  if (!trip) return <div className="p-4"><Empty title="No trip yet." body="Booking references and phone numbers live here." /></div>;
+
+  const cats = [...new Set(contacts.map((c) => c.category || "Other"))];
+
+  return (
+    <div className="px-3 py-3">
+      <p className="mb-3 text-xs text-slate-500">Everything you'd need to ring while standing on a platform holding two children.</p>
+
+      {cats.map((cat) => (
+        <section key={cat} className="mb-4">
+          <h3 className="mb-1 text-xs font-bold uppercase tracking-wider text-slate-500">{cat}</h3>
+          <ul className="space-y-2">
+            {contacts.filter((c) => (c.category || "Other") === cat).map((c) => (
+              <li key={c.id} className="rounded-lg border-2 border-slate-300 bg-white p-3">
+                <div className="flex items-start gap-2">
+                  <div className="min-w-0 flex-1">
+                    <p className="text-sm font-bold">{c.label}</p>
+                    {c.reference && <p className="text-xs text-slate-600">{c.reference}</p>}
+                    {c.notes && <p className="mt-1 text-xs text-slate-500">{c.notes}</p>}
+                  </div>
+                  <button onClick={() => setEditing(c)} className="rounded-md border-2 border-slate-300 p-2 text-slate-500"><Pencil size={14} /></button>
+                </div>
+                {c.phone && (
+                  <a href={`tel:${c.phone.replace(/\s/g, "")}`} className={`${btn} mt-2 w-full bg-slate-900 text-white`}>
+                    <Phone size={15} /> {c.phone}
+                  </a>
+                )}
+              </li>
+            ))}
+          </ul>
+        </section>
+      ))}
+
+      {contacts.length === 0 && <Empty title="Nothing saved yet." body="Add the cottage, the taxi firm, the nearest A&E." />}
+
+      <button onClick={() => setEditing({ ...blank, id: null })} className={`${btn} mt-2 w-full bg-slate-900 text-white`}>
+        <Plus size={16} /> Add a contact or booking
+      </button>
+
+      <Sheet open={!!editing} title={editing?.id ? "Edit contact" : "Add contact"} onClose={() => setEditing(null)}>
+        {editing && (
+          <>
+            <Field label="Name"><input className={inputCls} value={editing.label} onChange={(e) => setEditing({ ...editing, label: e.target.value })} placeholder="Seaview Cottages" /></Field>
+            <Field label="Type">
+              <input list="cats" className={inputCls} value={editing.category} onChange={(e) => setEditing({ ...editing, category: e.target.value })} />
+              <datalist id="cats">
+                {["Where we're staying", "Transport", "Medical", "Home", "Equipment hire", "Other"].map((c) => <option key={c} value={c} />)}
+              </datalist>
+            </Field>
+            <Field label="Phone"><input type="tel" className={inputCls} value={editing.phone} onChange={(e) => setEditing({ ...editing, phone: e.target.value })} /></Field>
+            <Field label="Booking reference or key detail"><input className={inputCls} value={editing.reference} onChange={(e) => setEditing({ ...editing, reference: e.target.value })} placeholder="Booking SVC-88214, arrive after 4pm" /></Field>
+            <Field label="Notes"><textarea rows="3" className={inputCls} value={editing.notes} onChange={(e) => setEditing({ ...editing, notes: e.target.value })} placeholder="Key safe code, step-free access, parking" /></Field>
+            <button
+              onClick={() => {
+                const { id, ...rest } = editing;
+                if (id) onPatch(id, rest); else onAdd([rest]);
+                setEditing(null);
+              }}
+              disabled={!editing.label.trim()}
+              className={`${btn} w-full bg-slate-900 text-white disabled:opacity-40`}>Save</button>
+            {editing.id && (
+              <button onClick={() => { onDelete(editing.id); setEditing(null); }} className={`${btn} mt-3 w-full border-2 border-red-200 bg-white text-red-700`}>
+                <Trash2 size={16} /> Delete
+              </button>
+            )}
+          </>
+        )}
+      </Sheet>
+    </div>
+  );
+}
+
+/* ------------------------- after the trip --------------------------- */
+
+/* Free-text reflections. The two actionable questions — what we wished we'd
+   packed, and what we wished we'd done — are handled separately below, since
+   those become real items and real jobs on the next trip rather than prose. */
+const REVIEW_PROMPTS = [
+  { key: "bags_used", label: "Which bags did we actually take?", hint: "List them. Next time's suggestions start from this." },
+  { key: "unused", label: "What came home unused?", hint: "The stuff to leave behind next time." },
+  { key: "what_worked", label: "What worked, for the kids especially?", hint: "Routines, seating, timings, which bag things lived in." },
+  { key: "notes", label: "Anything else worth remembering?", hint: "Access, lead times, staff, journey notes — things that aren't an item or a job." },
+];
+
+function AfterScreen({ trip, items, tripTasks, onSaveReview, onPatchItem, onAddItem, onAddMissedItem, onAddMissedJob, onDeleteTask, rooms, bags }) {
+  const [section, setSection] = useState("rx");
+  const [review, setReview] = useState({});
+  const [saveState, setSaveState] = useState("idle"); // idle | pending | saved
+  const [newRx, setNewRx] = useState("");
+  const saveTimer = useRef(null);
+
+  useEffect(() => {
+    if (!trip) return;
+    try { setReview(trip.review ? JSON.parse(trip.review) : {}); } catch { setReview({}); }
+    setSaveState("idle");
+  }, [trip?.id]);
+
+  const updateField = (key, value) => {
+    const next = { ...review, [key]: value };
+    setReview(next);
+    setSaveState("pending");
+    if (saveTimer.current) clearTimeout(saveTimer.current);
+    saveTimer.current = setTimeout(() => {
+      onSaveReview(next);
+      setSaveState("saved");
+    }, 700);
+  };
+
+  useEffect(() => () => { if (saveTimer.current) clearTimeout(saveTimer.current); }, []);
+
+  if (!trip) return <div className="p-4"><Empty title="No trip yet." body="Reordering and trip notes live here." /></div>;
+
+  const rx = items.filter((i) => i.is_prescription);
+
+  return (
+    <div className="px-3 py-3">
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <button onClick={() => setSection("rx")} className={`rounded-lg border-2 px-2 py-2 text-sm font-bold ${section === "rx" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+          Reorder ({rx.filter((i) => !i.reordered).length})
+        </button>
+        <button onClick={() => setSection("review")} className={`rounded-lg border-2 px-2 py-2 text-sm font-bold ${section === "review" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+          Trip notes
+        </button>
+      </div>
+
+      {section === "rx" && (
+        <>
+          <p className="mb-3 text-xs text-slate-500">
+            Everything marked as prescription on this trip. Tick it once it's requested, so nothing runs out in the week after you get home.
+          </p>
+          <ul className="mb-3 divide-y-2 divide-slate-100 overflow-hidden rounded-lg border-2 border-slate-300 bg-white">
+            {rx.map((i) => (
+              <li key={i.id} className="flex items-stretch">
+                <button onClick={() => onPatchItem(i.id, { reordered: !i.reordered })}
+                  className={`flex w-12 shrink-0 items-center justify-center ${i.reordered ? "bg-teal-600 text-white" : "bg-slate-50 text-slate-300"}`}>
+                  <Check size={20} strokeWidth={3} />
+                </button>
+                <div className="flex-1 px-2 py-2">
+                  <p className={`text-sm font-semibold ${i.reordered ? "text-slate-400 line-through" : ""}`}>
+                    {i.name}{i.quantity > 1 && <span className="ml-1 text-xs text-slate-500">×{i.quantity}</span>}
+                  </p>
+                  {i.notes_or_special_instructions && <p className="text-xs text-slate-500">{i.notes_or_special_instructions}</p>}
+                </div>
+              </li>
+            ))}
+            {rx.length === 0 && <li className="px-3 py-6 text-center text-sm text-slate-500">Nothing marked as prescription. Open any item and switch it on.</li>}
+          </ul>
+          <div className="flex gap-2">
+            <input className={inputCls} placeholder="Add something to reorder" value={newRx} onChange={(e) => setNewRx(e.target.value)} />
+            <button onClick={() => { if (newRx.trim()) { onAddItem({ name: newRx.trim(), room_source: "Medicine Cabinet", assigned_bag: bags[0] }); setNewRx(""); } }}
+              className={`${btn} shrink-0 bg-slate-900 px-5 text-white`}><Plus size={18} /></button>
+          </div>
+        </>
+      )}
+
+      {section === "review" && (
+        <>
+          <p className="mb-2 text-xs text-slate-500">
+            Fill this in on the way home while it's fresh. Claude reads it when drafting your next list — this is what makes the third trip better than the first. Saves as you type.
+          </p>
+          <p className="mb-3 rounded-lg border-2 border-amber-200 bg-amber-50 p-2 text-xs font-semibold text-amber-800">
+            Keep entries anonymised — use "Mum", "Dad", "Kid 1", "Kid 2" rather than names, since this repo is public.
+          </p>
+
+          <MissedItemsBox trip={trip} items={items} rooms={rooms} bags={bags}
+            onAddMissedItem={onAddMissedItem} onPatchItem={onPatchItem} />
+
+          <MissedJobsBox trip={trip} tasks={tripTasks} onAddMissedJob={onAddMissedJob} onDeleteTask={onDeleteTask} />
+
+          {REVIEW_PROMPTS.map((p) => (
+            <Field key={p.key} label={p.label}>
+              <textarea rows="3" className={inputCls} value={review[p.key] || ""} placeholder={p.hint}
+                onChange={(e) => updateField(p.key, e.target.value)} />
+            </Field>
+          ))}
+          <div className="mb-4 rounded-lg border-2 border-slate-300 bg-white p-3">
+            <p className="flex items-center gap-2 text-sm font-bold"><Camera size={15} /> Photos of the setup</p>
+            <p className="mt-1 text-xs text-slate-500">
+              Photograph each packed bag from the In bags tab — tap the camera on any bag heading. Those photos stay with the trip, so next time you can see exactly how it all fitted.
+            </p>
+          </div>
+          <p className="text-center text-xs font-semibold text-slate-500">
+            {saveState === "pending" ? "Saving…" : saveState === "saved" ? "Saved" : "\u00A0"}
+          </p>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* Things we wished we'd packed. These become real items on THIS trip, marked
+   as missed — so the record stays true about what was actually needed — and
+   they're offered as carry-overs when the next trip starts. */
+function MissedItemsBox({ trip, items, rooms, bags, onAddMissedItem, onPatchItem }) {
+  const [text, setText] = useState("");
+  const [room, setRoom] = useState(rooms[0]);
+  const [bag, setBag] = useState(bags[0]);
+  const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  const missed = items.filter((i) => i.was_missed);
+  const libraryMatch = useMemo(() => {
+    const q = norm(text);
+    if (q.length < 3) return null;
+    const found = (items || []).find((i) => norm(i.name) === q || norm(i.name).startsWith(q));
+    return found || null;
+  }, [text, items]);
+
+  const add = () => {
+    if (!text.trim()) return;
+    onAddMissedItem({ name: text.trim(), room_source: room, assigned_bag: bag });
+    setText("");
+  };
+
+  return (
+    <div className="mb-5 rounded-xl border-2 border-slate-300 bg-white p-3">
+      <p className="text-sm font-bold">What did we wish we'd packed?</p>
+      <p className="mb-3 mt-1 text-xs text-slate-500">
+        These get added to this trip marked as missed — so the record shows what was actually needed — and you'll be offered them when starting the next trip.
+      </p>
+
+      {missed.length > 0 && (
+        <ul className="mb-3 space-y-1.5">
+          {missed.map((i) => (
+            <li key={i.id} className="flex items-center gap-2 rounded-lg border-2 border-amber-200 bg-amber-50 px-2 py-2">
+              <span className="min-w-0 flex-1 text-sm font-semibold text-amber-900">{i.name}</span>
+              <button onClick={() => onPatchItem(i.id, { was_missed: false })}
+                className="shrink-0 text-xs font-bold text-amber-700">Remove</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <input className={inputCls} value={text} onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Waterproof walking shoes" />
+
+      {libraryMatch && (
+        <p className="mt-2 rounded-lg border-2 border-teal-200 bg-teal-50 p-2 text-xs text-teal-800">
+          Already in your library as "<strong>{libraryMatch.name}</strong>" — adding will use that name.
+        </p>
+      )}
+
+      {text.trim() && (
+        <>
+          <div className="mt-2 grid grid-cols-2 gap-2">
+            <div>
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Room</span>
+              <select className={inputCls} value={room} onChange={(e) => setRoom(e.target.value)}>
+                {rooms.map((r) => <option key={r}>{r}</option>)}
+              </select>
+            </div>
+            <div>
+              <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Bag</span>
+              <select className={inputCls} value={bag} onChange={(e) => setBag(e.target.value)}>
+                {bags.map((b) => <option key={b}>{b}</option>)}
+              </select>
+            </div>
+          </div>
+          <button onClick={add} className={`${btn} mt-2 w-full bg-slate-900 text-white`}>
+            <Plus size={16} /> Add "{text.trim()}"
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* Things we wished we'd done, or done sooner. These become real jobs on this
+   trip, so they carry over with the rest of the job list next time. */
+function MissedJobsBox({ trip, tasks, onAddMissedJob, onDeleteTask }) {
+  const [text, setText] = useState("");
+  const [kind, setKind] = useState("sort");
+  const missedJobs = (tasks || []).filter((t) => t.was_missed);
+
+  const add = () => {
+    if (!text.trim()) return;
+    onAddMissedJob({ title: text.trim(), kind });
+    setText("");
+  };
+
+  return (
+    <div className="mb-5 rounded-xl border-2 border-slate-300 bg-white p-3">
+      <p className="text-sm font-bold">What did we wish we'd done, or done sooner?</p>
+      <p className="mb-3 mt-1 text-xs text-slate-500">
+        Booking assistance earlier, ordering a prescription sooner. These become jobs, and carry over to the next trip's list.
+      </p>
+
+      {missedJobs.length > 0 && (
+        <ul className="mb-3 space-y-1.5">
+          {missedJobs.map((t) => (
+            <li key={t.id} className="flex items-center gap-2 rounded-lg border-2 border-amber-200 bg-amber-50 px-2 py-2">
+              <span className="min-w-0 flex-1">
+                <span className="block text-sm font-semibold text-amber-900">{t.title}</span>
+                <span className="block text-xs text-amber-700">{JOB_KINDS.find((k) => k.id === t.kind)?.label}</span>
+              </span>
+              <button onClick={() => onDeleteTask(t.id)} className="shrink-0 text-xs font-bold text-amber-700">Remove</button>
+            </li>
+          ))}
+        </ul>
+      )}
+
+      <input className={inputCls} value={text} onChange={(e) => setText(e.target.value)}
+        onKeyDown={(e) => e.key === "Enter" && add()} placeholder="Book assisted travel a week earlier" />
+
+      {text.trim() && (
+        <>
+          <span className="mb-1 mt-2 block text-xs font-bold uppercase tracking-wider text-slate-400">Which list does it belong on?</span>
+          <div className="grid grid-cols-1 gap-1.5">
+            {JOB_KINDS.map((k) => (
+              <button key={k.id} onClick={() => setKind(k.id)}
+                className={`flex items-center gap-2 rounded-lg border-2 px-2 py-2 text-left text-sm font-bold ${kind === k.id ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                <span className={`flex h-4 w-4 shrink-0 items-center justify-center rounded-full border-2 ${kind === k.id ? "border-white bg-white" : "border-slate-300"}`}>
+                  {kind === k.id && <span className="h-2 w-2 rounded-full bg-teal-700" />}
+                </span>
+                {k.label}
+              </button>
+            ))}
+          </div>
+          <button onClick={add} className={`${btn} mt-2 w-full bg-slate-900 text-white`}>
+            <Plus size={16} /> Add "{text.trim()}"
+          </button>
+        </>
+      )}
+    </div>
+  );
+}
+
+/* ------------------------------ sheets ------------------------------ */
+
+function EditItemSheet({ item, rooms, bags, packers, onAddRoom, onAddBag, onClose, onSave, onDelete }) {
+  const [d, setD] = useState(item);
+  useEffect(() => setD(item), [item]);
+  if (!item || !d) return null;
+  const set = (k) => (e) => setD({ ...d, [k]: e.target.value });
+  const Toggle = ({ on, onClick, Icon, label, tone }) => (
+    <button onClick={onClick} className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-bold ${on ? tone : "border-slate-300 bg-white text-slate-500"}`}>
+      <Icon size={15} /> {label}
+    </button>
+  );
+  return (
+    <Sheet open title="Edit item" onClose={onClose}>
+      <Field label="Item"><input className={inputCls} value={d.name} onChange={set("name")} /></Field>
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="From which room">
+          <PickOrAdd value={d.room_source} options={rooms} placeholder="New room name"
+            onChange={(v) => { setD({ ...d, room_source: v }); if (!rooms.includes(v)) onAddRoom(v); }} />
+        </Field>
+        <Field label="Into which bag">
+          <PickOrAdd value={d.assigned_bag} options={bags} placeholder="New bag name"
+            onChange={(v) => { setD({ ...d, assigned_bag: v }); if (!bags.includes(v)) onAddBag(v); }} />
+        </Field>
+      </div>
+      <Field label="How many">
+        <QuantityInput value={d.quantity} onChange={(n) => setD({ ...d, quantity: n })} />
+      </Field>
+      <Field label="Who packs it">
+        <div className="flex flex-wrap gap-2">
+          {packers.map((p) => (
+            <button key={p} onClick={() => setD({ ...d, packer: p })}
+              className={`rounded-full border-2 px-3 py-2 text-sm font-bold ${d.packer === p ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white"}`}>{p}</button>
+          ))}
+        </div>
+      </Field>
+      <Field label="Note"><textarea rows="2" className={inputCls} value={d.notes_or_special_instructions || ""} onChange={set("notes_or_special_instructions")} /></Field>
+
+      <div className="mb-3 flex gap-2">
+        <Toggle on={d.is_flagged} onClick={() => setD({ ...d, is_flagged: !d.is_flagged })} Icon={Flag} label="Flag" tone="border-amber-500 bg-amber-100 text-amber-800" />
+        <Toggle on={d.is_prescription} onClick={() => setD({ ...d, is_prescription: !d.is_prescription })} Icon={Pill} label="Prescription" tone="border-teal-700 bg-teal-100 text-teal-800" />
+        <Toggle on={d.last_minute} onClick={() => setD({ ...d, last_minute: !d.last_minute })} Icon={Snowflake} label="Last minute" tone="border-sky-600 bg-sky-100 text-sky-800" />
+      </div>
+      {d.is_flagged && (
+        <Field label="What's the problem?">
+          <input className={inputCls} value={d.flag_note || ""} onChange={set("flag_note")} placeholder="Can't find it — check under the bunk" />
+        </Field>
+      )}
+      <p className="mb-4 text-xs text-slate-500">
+        Flag: something's wrong with this one and the other of you needs to know. Prescription: shows up in Reorder after the trip. Last minute: fridge, freezer, or still in use this morning.
+      </p>
+
+      <button onClick={() => onSave({
+        name: d.name, room_source: d.room_source, assigned_bag: d.assigned_bag, quantity: d.quantity,
+        notes_or_special_instructions: d.notes_or_special_instructions, packer: d.packer,
+        is_flagged: d.is_flagged, flag_note: d.flag_note, is_prescription: d.is_prescription, last_minute: d.last_minute,
+      })} className={`${btn} w-full bg-slate-900 py-4 text-white`}>Save changes</button>
+      <button onClick={onDelete} className={`${btn} mt-3 w-full border-2 border-red-200 bg-white text-red-700`}><Trash2 size={16} /> Remove from list</button>
+    </Sheet>
+  );
+}
+
+function AddItemSheet({ open, rooms, bags, packers, items, onAddRoom, onAddBag, onClose, onAdd, onPasteList, onGoToLibrary }) {
+  const blank = { name: "", room_source: rooms[0], assigned_bag: bags[0], quantity: 1, notes_or_special_instructions: "", packer: "Either of us", is_prescription: false, last_minute: false, is_flagged: false, flag_note: "" };
+  const [d, setD] = useState(blank);
+  const [keepOpen, setKeepOpen] = useState(true);
+  const [localRooms, setLocalRooms] = useState(rooms);
+  const [localBags, setLocalBags] = useState(bags);
+  useEffect(() => { if (open) { setD(blank); setLocalRooms(rooms); setLocalBags(bags); } }, [open]);
+  const submit = () => {
+    if (!d.name.trim()) return;
+    onAdd(d);
+    if (keepOpen) setD({ ...blank, room_source: d.room_source, assigned_bag: d.assigned_bag, packer: d.packer });
+    else onClose();
+  };
+
+  /* Live nudge as they type: is something close to this already in the
+     library? Same normalising as the library's own dedup, plus a looser
+     "starts with" check so "wipe" still surfaces "Wipes" while typing. */
+  const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+  const libraryMatch = useMemo(() => {
+    const q = norm(d.name);
+    if (q.length < 3) return null;
+    const seen = new Map();
+    (items || []).forEach((i) => {
+      const key = norm(i.name);
+      if (!key) return;
+      if (key === q || key.startsWith(q) || q.startsWith(key)) {
+        if (!seen.has(key)) seen.set(key, { name: i.name, count: 0, key });
+        seen.get(key).count++;
+      }
+    });
+    const matches = [...seen.values()];
+    // exact match first, otherwise the most-used near-match
+    return matches.find((m) => m.key === q) || matches.sort((a, b) => b.count - a.count)[0] || null;
+  }, [d.name, items]);
+
+  return (
+    <Sheet open={open} title="Add an item" onClose={onClose}>
+      {onPasteList && (
+        <button onClick={onPasteList} className={`${btn} mb-5 w-full border-2 border-slate-900 bg-white py-3`}>
+          <ClipboardList size={16} /> Paste in a whole list instead
+        </button>
+      )}
+      <Field label="Item"><input autoFocus className={inputCls} value={d.name} onChange={(e) => setD({ ...d, name: e.target.value })} onKeyDown={(e) => e.key === "Enter" && submit()} placeholder="Ear defenders" /></Field>
+
+      {libraryMatch && (
+        <button
+          onClick={() => onGoToLibrary(libraryMatch.name)}
+          className="mb-4 -mt-2 flex w-full items-start gap-2 rounded-lg border-2 border-teal-300 bg-teal-50 p-3 text-left"
+        >
+          <BookOpen size={16} className="mt-0.5 shrink-0 text-teal-700" />
+          <span className="text-sm text-teal-900">
+            Want to add "<span className="font-bold underline">{libraryMatch.name}</span>" from the library?
+            {libraryMatch.count > 1 && <span className="text-teal-700"> Used on {libraryMatch.count} trip{libraryMatch.count === 1 ? "" : "s"} already.</span>}
+          </span>
+        </button>
+      )}
+
+      <div className="grid grid-cols-2 gap-3">
+        <Field label="From which room">
+          <PickOrAdd value={d.room_source} options={localRooms} placeholder="New room name"
+            onChange={(v) => { setD({ ...d, room_source: v }); if (!localRooms.includes(v)) { setLocalRooms([...localRooms, v]); onAddRoom(v); } }} />
+        </Field>
+        <Field label="Into which bag">
+          <PickOrAdd value={d.assigned_bag} options={localBags} placeholder="New bag name"
+            onChange={(v) => { setD({ ...d, assigned_bag: v }); if (!localBags.includes(v)) { setLocalBags([...localBags, v]); onAddBag(v); } }} />
+        </Field>
+      </div>
+      <Field label="How many">
+        <QuantityInput value={d.quantity} onChange={(n) => setD({ ...d, quantity: n })} />
+      </Field>
+      <Field label="Who packs it">
+        <div className="flex flex-wrap gap-2">
+          {packers.map((p) => (
+            <button key={p} onClick={() => setD({ ...d, packer: p })}
+              className={`rounded-full border-2 px-3 py-2 text-sm font-bold ${d.packer === p ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white"}`}>{p}</button>
+          ))}
+        </div>
+      </Field>
+      <div className="mb-4 flex gap-2">
+        <button onClick={() => setD({ ...d, is_flagged: !d.is_flagged, flag_note: d.is_flagged ? "" : d.flag_note })}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-bold ${d.is_flagged ? "border-amber-500 bg-amber-100 text-amber-800" : "border-slate-300 bg-white text-slate-500"}`}>
+          <Flag size={15} /> Flag
+        </button>
+        <button onClick={() => setD({ ...d, is_prescription: !d.is_prescription })}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-bold ${d.is_prescription ? "border-teal-700 bg-teal-100 text-teal-800" : "border-slate-300 bg-white text-slate-500"}`}>
+          <Pill size={15} /> Prescription
+        </button>
+        <button onClick={() => setD({ ...d, last_minute: !d.last_minute })}
+          className={`flex flex-1 items-center justify-center gap-1.5 rounded-xl border-2 px-2 py-3 text-xs font-bold ${d.last_minute ? "border-sky-600 bg-sky-100 text-sky-800" : "border-slate-300 bg-white text-slate-500"}`}>
+          <Snowflake size={15} /> Last minute
+        </button>
+      </div>
+      {d.is_flagged && (
+        <Field label="What's the problem?">
+          <input className={inputCls} value={d.flag_note} onChange={(e) => setD({ ...d, flag_note: e.target.value })} placeholder="Can't find it — check under the bunk" />
+        </Field>
+      )}
+      <label className="mb-4 flex items-center gap-2 text-sm font-semibold text-slate-600">
+        <input type="checkbox" checked={keepOpen} onChange={(e) => setKeepOpen(e.target.checked)} className="h-5 w-5" />
+        Keep this open so I can add several
+      </label>
+      <button disabled={!d.name.trim()} onClick={submit} className={`${btn} w-full bg-slate-900 py-4 text-white disabled:opacity-40`}>Add to list</button>
+    </Sheet>
+  );
+}
+
+function AssignSheet({ group, packers, onClose, onPick }) {
+  if (!group) return null;
+  return (
+    <Sheet open title={`Who packs ${group.label}?`} onClose={onClose}>
+      <p className="mb-4 text-sm text-slate-600">Sets the packer on all {group.list.length} items showing in this group.</p>
+      {packers.map((p) => (
+        <button key={p} onClick={() => onPick(p)} className={`${btn} mb-2 w-full border-2 border-slate-300 bg-white py-4`}>{p}</button>
+      ))}
+    </Sheet>
+  );
+}
+
+function PhotoSheet({ open, bag, photo, onClose, onSave, onDelete }) {
+  const [preview, setPreview] = useState(null);
+  const [caption, setCaption] = useState("");
+  useEffect(() => { if (open) { setPreview(photo?.data_url || null); setCaption(photo?.caption || ""); } }, [open, photo]);
+  if (!open) return null;
+
+  const shrink = (file) => new Promise((res) => {
+    const reader = new FileReader();
+    reader.onload = () => {
+      const img = new Image();
+      img.onload = () => {
+        const scale = Math.min(1, 900 / Math.max(img.width, img.height));
+        const c = document.createElement("canvas");
+        c.width = img.width * scale; c.height = img.height * scale;
+        c.getContext("2d").drawImage(img, 0, 0, c.width, c.height);
+        res(c.toDataURL("image/jpeg", 0.55));
+      };
+      img.src = reader.result;
+    };
+    reader.readAsDataURL(file);
+  });
+
+  return (
+    <Sheet open title={`Photo — ${bag}`} onClose={onClose}>
+      {preview ? (
+        <img src={preview} alt={`${bag} packed`} className="mb-4 w-full rounded-xl border-2 border-slate-300" />
+      ) : (
+        <div className="mb-4 rounded-xl border-2 border-dashed border-slate-300 p-8 text-center text-sm text-slate-500">
+          No photo yet. Take one once it's packed — next time you'll know how it all fitted.
+        </div>
+      )}
+      <label className={`${btn} mb-3 w-full cursor-pointer border-2 border-slate-900 bg-white`}>
+        <Camera size={16} /> {preview ? "Replace photo" : "Take or choose a photo"}
+        <input type="file" accept="image/*" capture="environment" className="hidden"
+          onChange={async (e) => { const f = e.target.files?.[0]; if (f) setPreview(await shrink(f)); }} />
+      </label>
+      <Field label="Caption"><input className={inputCls} value={caption} onChange={(e) => setCaption(e.target.value)} placeholder="Meds pouch sits on top, left side" /></Field>
+      <button disabled={!preview} onClick={() => onSave(preview, caption)} className={`${btn} w-full bg-slate-900 py-4 text-white disabled:opacity-40`}>Save photo</button>
+      {photo && <button onClick={onDelete} className={`${btn} mt-3 w-full border-2 border-red-200 bg-white text-red-700`}><Trash2 size={16} /> Delete photo</button>}
+    </Sheet>
+  );
+}
+
+function ImportSheet({ open, rooms, bags, activeTrip, onClose, onImport, onImportWithTrip }) {
+  const [text, setText] = useState("");
+  const [groups, setGroups] = useState(null);
+  const [mapping, setMapping] = useState({});
+  const [skipped, setSkipped] = useState({});
+  const [titleInfo, setTitleInfo] = useState(null);
+  const [useTitle, setUseTitle] = useState(true);
+
+  useEffect(() => { if (open) { setText(""); setGroups(null); setMapping({}); setSkipped({}); setTitleInfo(null); setUseTitle(true); } }, [open]);
+
+  const analyse = () => {
+    const found = extractTripTitle(text);
+    const bodyText = found ? text.replace(found.consumedLine, "") : text;
+    setTitleInfo(found);
+    const g = parsePastedList(bodyText);
+    setGroups(g);
+    const m = {};
+    g.forEach((grp, i) => {
+      m[i] = { room: guessRoom(grp.heading, rooms), bag: guessBag(grp.heading, bags) };
+    });
+    setMapping(m);
+  };
+
+  const totalItems = groups ? groups.reduce((a, g, i) => a + (skipped[i] ? 0 : g.items.length), 0) : 0;
+  const unresolvedCount = groups ? groups.filter((g, i) => !skipped[i] && (!mapping[i]?.room || !mapping[i]?.bag)).length : 0;
+
+  const buildRows = () => {
+    const rows = [];
+    groups.forEach((g, i) => {
+      if (skipped[i]) return;
+      const map = mapping[i] || {};
+      g.items.forEach((it) => {
+        rows.push({
+          name: it.name,
+          quantity: it.quantity,
+          notes_or_special_instructions: it.notes,
+          room_source: map.room || rooms[0],
+          assigned_bag: map.bag || bags[0],
+        });
+      });
+    });
+    return rows;
+  };
+
+  const doImport = () => {
+    const rows = buildRows();
+    if (useTitle && titleInfo && onImportWithTrip) {
+      onImportWithTrip(
+        {
+          name: titleInfo.name,
+          month: titleInfo.month || "January",
+          days: titleInfo.days || 1,
+          transport: titleInfo.transport || "Car",
+          international: titleInfo.international,
+        },
+        rows
+      );
+    } else {
+      onImport(rows);
+    }
+  };
+
+  return (
+    <Sheet open={open} title="Paste in an old list" onClose={onClose}>
+      {!groups ? (
+        <>
+          <p className="mb-3 text-sm text-slate-600">
+            Paste a whole old list — Google Tasks, notes, anywhere. If the first line reads like a trip title ("Efteling christmas, 4 days, driving"), it's used to fill in the trip itself rather than treated as an item. Headings become groups you map to a room and bag; quantities like "x3" and brackets-as-notes are picked up automatically.
+          </p>
+          <p className="mb-3 rounded-lg border-2 border-amber-200 bg-amber-50 p-2 text-xs font-semibold text-amber-800">
+            Worth stripping out real names before pasting — use S, F, Mum, Dad.
+          </p>
+          <textarea rows="12" className={`${inputCls} font-mono text-sm`} value={text} onChange={(e) => setText(e.target.value)}
+            placeholder={"Efteling christmas, 4 days, driving\n\nKitchen:\nwipes\noat milk x3\ncool bag (freeze packs overnight)\nMeds:\nParacetamol\nLaxido"} />
+          <button onClick={analyse} disabled={!text.trim()} className={`${btn} mt-3 w-full bg-slate-900 py-4 text-white disabled:opacity-40`}>
+            Read the list
+          </button>
+        </>
+      ) : (
+        <>
+          <button onClick={() => setGroups(null)} className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-500">
+            <ArrowLeft size={15} /> Paste something different
+          </button>
+
+          {titleInfo && (
+            <div className="mb-4 rounded-xl border-2 border-teal-300 bg-teal-50 p-3">
+              <p className="mb-1 text-xs font-bold uppercase tracking-wider text-teal-700">Found a trip title</p>
+              <p className="mb-2 text-sm text-slate-700">
+                "{titleInfo.consumedLine}" →
+                {" "}<strong>{titleInfo.name}</strong>
+                {titleInfo.month && `, ${titleInfo.month}`}
+                {titleInfo.days && `, ${titleInfo.days} days`}
+                {titleInfo.transport && `, ${titleInfo.transport}`}
+                {titleInfo.international && `, international`}
+              </p>
+              <label className="flex items-center gap-2 text-sm font-semibold text-slate-700">
+                <input type="checkbox" checked={useTitle} onChange={(e) => setUseTitle(e.target.checked)} className="h-5 w-5" />
+                Create this as a new trip using these details
+              </label>
+              {!useTitle && (
+                <p className="mt-1 text-xs text-slate-500">Off means these items import into "{activeTrip?.name || "the current trip"}" instead, and the title line is discarded.</p>
+              )}
+            </div>
+          )}
+          {!titleInfo && (
+            <p className="mb-4 rounded-xl border-2 border-slate-200 bg-slate-50 p-3 text-sm text-slate-600">
+              No trip title detected on the first line — importing straight into "{activeTrip?.name || "the current trip"}".
+            </p>
+          )}
+
+          <p className="mb-4 text-sm text-slate-600">
+            Found <strong>{groups.length} groups</strong>, {totalItems} items to import. Set where each group came from and where it's going.
+          </p>
+          {groups.map((g, i) => ({ g, i }))
+            .sort((a, b) => {
+              const aUnmapped = !mapping[a.i]?.room || !mapping[a.i]?.bag;
+              const bUnmapped = !mapping[b.i]?.room || !mapping[b.i]?.bag;
+              return aUnmapped === bUnmapped ? 0 : aUnmapped ? -1 : 1;
+            })
+            .map(({ g, i }) => {
+            const needsRoom = !mapping[i]?.room;
+            const needsBag = !mapping[i]?.bag;
+            const needsAttention = !skipped[i] && (needsRoom || needsBag);
+            return (
+            <div key={i} className={`mb-4 rounded-xl border-2 p-3 ${
+              skipped[i] ? "border-slate-200 bg-slate-100 opacity-60"
+              : needsAttention ? "border-amber-400 bg-amber-50"
+              : "border-slate-300 bg-white"
+            }`}>
+              <div className="mb-2 flex items-center justify-between gap-2">
+                <p className="min-w-0 flex-1 truncate text-sm font-bold">
+                  {g.heading} <span className="text-xs font-normal text-slate-500">({g.items.length})</span>
+                  {needsAttention && <span className="ml-2 text-xs font-bold text-amber-700">needs a choice</span>}
+                </p>
+                <button onClick={() => setSkipped({ ...skipped, [i]: !skipped[i] })}
+                  className="shrink-0 text-xs font-bold text-slate-500">
+                  {skipped[i] ? "Include" : "Skip"}
+                </button>
+              </div>
+              {!skipped[i] && (
+                <>
+                  {g.heading.toLowerCase().includes("upstairs") && needsAttention && (
+                    <p className="mb-2 text-xs text-slate-600">This group had a lot of different kinds of things in it — worth spreading across a few rooms rather than picking just one.</p>
+                  )}
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>
+                      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Room</span>
+                      <select className={`${inputCls} ${needsRoom ? "border-amber-400" : ""}`} value={mapping[i]?.room || ""}
+                        onChange={(e) => setMapping({ ...mapping, [i]: { ...mapping[i], room: e.target.value } })}>
+                        {needsRoom && <option value="" disabled>Choose a room…</option>}
+                        {rooms.map((r) => <option key={r}>{r}</option>)}
+                      </select>
+                    </div>
+                    <div>
+                      <span className="mb-1 block text-xs font-bold uppercase tracking-wider text-slate-400">Bag</span>
+                      <select className={`${inputCls} ${needsBag ? "border-amber-400" : ""}`} value={mapping[i]?.bag || ""}
+                        onChange={(e) => setMapping({ ...mapping, [i]: { ...mapping[i], bag: e.target.value } })}>
+                        {needsBag && <option value="" disabled>Choose a bag…</option>}
+                        {bags.map((b) => <option key={b}>{b}</option>)}
+                      </select>
+                    </div>
+                  </div>
+                  <p className="mt-2 truncate text-xs text-slate-500">
+                    {g.items.slice(0, 4).map((it) => it.name + (it.quantity > 1 ? ` ×${it.quantity}` : "")).join(", ")}
+                    {g.items.length > 4 && `, +${g.items.length - 4} more`}
+                  </p>
+                </>
+              )}
+            </div>
+          )})}
+          <button onClick={doImport} disabled={!totalItems || unresolvedCount > 0} className={`${btn} w-full bg-slate-900 py-4 text-white disabled:opacity-40`}>
+            {unresolvedCount > 0
+              ? `Choose a room and bag for ${unresolvedCount} more group${unresolvedCount === 1 ? "" : "s"}`
+              : useTitle && titleInfo ? `Create "${titleInfo.name}" with ${totalItems} items` : `Import ${totalItems} items into ${activeTrip?.name || "current trip"}`}
+          </button>
+        </>
+      )}
+    </Sheet>
+  );
+}
+
+function NewTripSheet({ open, onClose, trips, items, tasks, rooms, bags, onCreate }) {
+  const [f, setF] = useState({
+    name: "", month: "August", days: 7, transport: "Car",
+    accommodation: "Self-catering", international: false, nights_en_route: 0,
+    needs: "S: PEG fed, wheelchair user, puree and limited finger foods, smoothie only for drinks, osmotic and stimulant laxatives, suppositories, PEG kit including extension tubes. F: sound sensitive, ear defenders, chewy necklace.",
+  });
+  const [loading, setLoading] = useState(false);
+  const [err, setErr] = useState("");
+  const [progress, setProgress] = useState("");
+  const [draft, setDraft] = useState(null);
+  const [picked, setPicked] = useState({});
+  const [partialNote, setPartialNote] = useState("");
+  const [carryJobs, setCarryJobs] = useState(true);
+  const [carryMissed, setCarryMissed] = useState(true);
+
+  /* Jobs from the most recently created trip — insurance, the cat sitter,
+     assistance bookings — nearly all of which recur every time. */
+  const lastTripJobs = useMemo(() => {
+    const sorted = [...trips].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    const last = sorted[0];
+    if (!last) return [];
+    return (tasks || []).filter((t) => t.trip_id === last.id);
+  }, [trips, tasks]);
+
+  /* Things they wished they'd packed last time — the whole point of recording
+     them is that they turn up here, on the next trip, rather than being a note
+     nobody rereads. */
+  const lastTripMissedItems = useMemo(() => {
+    const sorted = [...trips].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    const last = sorted[0];
+    if (!last) return [];
+    return (items || []).filter((i) => i.trip_id === last.id && i.was_missed);
+  }, [trips, items]);
+  const lastTripName = useMemo(() => {
+    const sorted = [...trips].sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")));
+    return sorted[0]?.name || "";
+  }, [trips]);
+  useEffect(() => { if (open) { setDraft(null); setErr(""); setPicked({}); setProgress(""); setPartialNote(""); } }, [open]);
+  const set = (k) => (e) => setF({ ...f, [k]: e.target.value });
+  const history = useMemo(() => historyText(trips, items), [trips, items]);
+
+  const generate = async () => {
+    setLoading(true); setErr(""); setPartialNote(""); setProgress("Starting…");
+    try {
+      const { items: rows, failures } = await draftItemsSectioned(
+        { ...f, history, rooms, bags, nightsEnRoute: f.nights_en_route },
+        setProgress
+      );
+      setDraft(rows);
+      setPicked(Object.fromEntries(rows.map((_, i) => [i, true])));
+      if (failures.length) {
+        setPartialNote(`Couldn't complete: ${failures.join(", ")}. Everything else came through — you can add the rest from a past trip.`);
+      }
+    } catch (e) { setErr(e.message); }
+    setProgress("");
+    setLoading(false);
+  };
+  const chosen = draft ? draft.filter((_, i) => picked[i]) : [];
+
+  return (
+    <Sheet open={open} title="New trip" onClose={onClose}>
+      {!draft ? (
+        <>
+          <Field label="Trip name"><input className={inputCls} value={f.name} onChange={set("name")} placeholder="Half-term by the sea" /></Field>
+          <div className="grid grid-cols-2 gap-3">
+            <Field label="Month">
+              <select className={inputCls} value={f.month} onChange={set("month")}>
+                {["January","February","March","April","May","June","July","August","September","October","November","December"].map((m) => <option key={m}>{m}</option>)}
+              </select>
+            </Field>
+            <Field label="Days away"><QuantityInput value={f.days} onChange={(n) => setF({ ...f, days: n })} /></Field>
+          </div>
+          <Field label="Getting there by">
+            <select className={inputCls} value={f.transport} onChange={set("transport")}>
+              {["Car", "Train", "Plane", "Ferry", "Coach"].map((t) => <option key={t}>{t}</option>)}
+            </select>
+          </Field>
+          <Field label="Staying in">
+            <select className={inputCls} value={f.accommodation} onChange={set("accommodation")}>
+              {["Self-catering", "Hotel", "With relatives", "With friends", "Camping", "Mixed"].map((a) => <option key={a}>{a}</option>)}
+            </select>
+          </Field>
+          <Field label="Nights in temporary accommodation on the way out">
+            <QuantityInput value={f.nights_en_route + 1} onChange={(n) => setF({ ...f, nights_en_route: Math.max(0, n - 1) })} />
+            <span className="mt-1 block text-xs text-slate-500">
+              Currently {f.nights_en_route === 0 ? "none — straight there" : `${f.nights_en_route} night(s)`}. This drives how much has to be reachable in the grab bag.
+            </span>
+          </Field>
+          <button onClick={() => setF({ ...f, international: !f.international })}
+            className={`${btn} mb-4 w-full border-2 py-4 ${f.international ? "border-teal-700 bg-teal-100 text-teal-800" : "border-slate-300 bg-white text-slate-600"}`}>
+            {f.international ? <><Check size={16} strokeWidth={3} /> International trip</> : "Domestic trip — tap if international"}
+          </button>
+          {f.international && (
+            <p className="mb-4 rounded-lg border-2 border-teal-200 bg-teal-50 p-2 text-xs font-semibold text-teal-800">
+              Passports, birth certificates, travel insurance, international breakdown cover and plug adaptors will be suggested.
+            </p>
+          )}
+          <p className="mb-4 rounded-lg border-2 border-sky-200 bg-sky-50 p-2 text-xs font-semibold text-sky-800">
+            Swimming things will be suggested — they're the most commonly forgotten thing, whatever the season.
+            {["May", "June", "July", "August", "September"].includes(f.month) &&
+              " As it's " + f.month + ", insect repellent, sun cream, hats and sunglasses will be too."}
+            {["November", "December", "January", "February"].includes(f.month) &&
+              " As it's " + f.month + ", thermals, gloves, hats and waterproofs will be too."}
+          </p>
+          <Field label="What the children need"><textarea rows="5" className={inputCls} value={f.needs} onChange={set("needs")} /></Field>
+
+          {lastTripJobs.length > 0 && (
+            <label className="mb-4 flex items-start gap-2 rounded-lg border-2 border-slate-300 bg-white p-3 text-sm font-semibold text-slate-700">
+              <input type="checkbox" checked={carryJobs} onChange={(e) => setCarryJobs(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />
+              <span>
+                Bring over the {lastTripJobs.length} jobs from {lastTripName}
+                <span className="mt-1 block text-xs font-normal text-slate-500">
+                  Insurance, assistance bookings, the cat — mostly the same every time. They come across unticked, and you can delete any that don't apply.
+                </span>
+              </span>
+            </label>
+          )}
+          {lastTripMissedItems.length > 0 && (
+            <label className="mb-4 flex items-start gap-2 rounded-lg border-2 border-amber-300 bg-amber-50 p-3 text-sm font-semibold text-amber-900">
+              <input type="checkbox" checked={carryMissed} onChange={(e) => setCarryMissed(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />
+              <span>
+                Add the {lastTripMissedItems.length} thing{lastTripMissedItems.length === 1 ? "" : "s"} you wished you'd packed on {lastTripName}
+                <span className="mt-1 block text-xs font-normal text-amber-800">
+                  {lastTripMissedItems.map((i) => i.name).join(", ")}
+                </span>
+              </span>
+            </label>
+          )}
+          {err && <p className="mb-3 rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{err}</p>}
+          <button onClick={generate} disabled={loading} className={`${btn} w-full bg-teal-700 py-4 text-white disabled:opacity-60`}>
+            {loading ? <><Loader2 size={16} className="animate-spin" /> {progress || "Reading your past trips…"}</> : <><Sparkles size={16} /> Draft the list for me</>}
+          </button>
+          <button onClick={() => onCreate({ ...f, name: f.name || `${f.month} trip`, notes: f.needs }, [], carryJobs ? lastTripJobs : [], carryMissed ? lastTripMissedItems : [])} className={`${btn} mt-3 w-full border-2 border-slate-300 bg-white py-4`}>
+            Start empty instead
+          </button>
+        </>
+      ) : (
+        <>
+          <p className="mb-2 text-sm text-slate-600">{draft.length} suggestions from {f.month}, {f.days} days by {f.transport.toLowerCase()}, and what you wrote after past trips. Untick anything you don't want.</p>
+          {partialNote && (
+            <p className="mb-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">{partialNote}</p>
+          )}
+          <button onClick={() => setDraft(null)} className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-500"><ArrowLeft size={15} /> Change the details</button>
+          <ul className="mb-4 space-y-1.5">
+            {draft.map((r, i) => (
+              <li key={i}>
+                <button onClick={() => setPicked({ ...picked, [i]: !picked[i] })}
+                  className={`flex w-full items-center gap-2 rounded-lg border-2 px-2 py-2 text-left ${picked[i] ? "border-teal-600 bg-white" : "border-slate-200 bg-slate-100 opacity-60"}`}>
+                  <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${picked[i] ? "border-teal-600 bg-teal-600 text-white" : "border-slate-300"}`}>
+                    {picked[i] && <Check size={12} strokeWidth={3} />}
+                  </span>
+                  <span className="min-w-0 flex-1">
+                    <span className="block text-sm font-semibold">
+                      {r.name}{r.quantity > 1 && ` ×${r.quantity}`}
+                      {r.is_prescription && <Pill size={11} className="ml-1 inline text-teal-700" />}
+                      {r.last_minute && <Snowflake size={11} className="ml-1 inline text-sky-600" />}
+                    </span>
+                    <span className="block text-xs uppercase tracking-wide text-slate-400">{r.room_source} → {r.assigned_bag}</span>
+                  </span>
+                </button>
+              </li>
+            ))}
+          </ul>
+          <button onClick={() => onCreate({ name: f.name || `${f.month} trip`, month: f.month, days: f.days, transport: f.transport, accommodation: f.accommodation, international: f.international, nights_en_route: f.nights_en_route, notes: f.needs }, chosen, carryJobs ? lastTripJobs : [], carryMissed ? lastTripMissedItems : [])}
+            className={`${btn} w-full bg-slate-900 py-4 text-white`}>Create trip with {chosen.length} items</button>
+        </>
+      )}
+    </Sheet>
+  );
+}
+
+/* The master library: every item ever packed, deduplicated by name, with the
+   trips it appeared on and the bags it went into. Editing here rewrites every
+   matching row across every trip, which is what makes it possible to empty a
+   room like "Medicine Cabinet" and then delete it. */
+function LibrarySheet({ open, onClose, items, trips, activeTripId, rooms, bags, packers,
+                        archivedLibraryItems, onArchive, onUnarchive, initialSearch,
+                        collapsedGroups, setCollapsedGroups,
+                        onAddToTrip, onEditEverywhere, onDeleteEverywhere }) {
+  const [view, setView] = useState("library"); // library | duplicates
+  const [search, setSearch] = useState("");
+  const [groupBy, setGroupBy] = useState("room"); // room | bag | name
+  const [sel, setSel] = useState({});
+  const [editing, setEditing] = useState(null);
+  const [confirmDelete, setConfirmDelete] = useState(null);
+  const [showArchived, setShowArchived] = useState(false);
+  const [applyToPast, setApplyToPast] = useState(false);
+  const archivedSet = useMemo(() => new Set(archivedLibraryItems || []), [archivedLibraryItems]);
+
+  useEffect(() => {
+    if (open) {
+      setSearch(initialSearch || "");
+      setSel({}); setEditing(null); setView("library"); setConfirmDelete(null);
+      /* Only force groups open when arriving from a "did you mean X" link —
+         otherwise leave the person's own collapsed/expanded choices alone. */
+      if (initialSearch) setCollapsedGroups({});
+    }
+  }, [open, initialSearch]);
+
+  const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+
+  /* Trips newest first, so a library entry can show how an item was packed
+     most recently — that's the sensible default for adding it again. */
+  const tripOrder = useMemo(() => {
+    const m = new Map();
+    [...trips]
+      .sort((a, b) => String(b.created_at || "").localeCompare(String(a.created_at || "")))
+      .forEach((t, idx) => m.set(t.id, idx));
+    return m;
+  }, [trips]);
+
+  /* One row per distinct item name, carrying every occurrence behind it. */
+  const library = useMemo(() => {
+    const map = new Map();
+    items.forEach((i) => {
+      const key = norm(i.name);
+      if (!key) return;
+      if (!map.has(key)) {
+        map.set(key, { key, occurrences: [], tripIds: new Set() });
+      }
+      const entry = map.get(key);
+      entry.occurrences.push(i);
+      entry.tripIds.add(i.trip_id);
+    });
+    return [...map.values()].map((entry) => {
+      /* Most recent occurrence wins for the displayed defaults. */
+      const sorted = [...entry.occurrences].sort(
+        (a, b) => (tripOrder.get(a.trip_id) ?? 999) - (tripOrder.get(b.trip_id) ?? 999)
+      );
+      const latest = sorted[0];
+      return {
+        ...entry,
+        latestId: latest.id,
+        name: latest.name,
+        room_source: latest.room_source,
+        assigned_bag: latest.assigned_bag,
+        quantity: latest.quantity,
+        notes_or_special_instructions: latest.notes_or_special_instructions,
+        is_prescription: entry.occurrences.some((o) => o.is_prescription),
+        last_minute: entry.occurrences.some((o) => o.last_minute),
+      };
+    });
+  }, [items, tripOrder]);
+
+  const onThisTrip = useMemo(
+    () => new Set(items.filter((i) => i.trip_id === activeTripId).map((i) => norm(i.name))),
+    [items, activeTripId]
+  );
+
+  /* Items appearing more than once on the CURRENT trip — often deliberate
+     (pants in the grab bag and the suitcase) so these are for review only. */
+  const duplicatesOnTrip = useMemo(() => {
+    const map = new Map();
+    items.filter((i) => i.trip_id === activeTripId).forEach((i) => {
+      const key = norm(i.name);
+      if (!key) return;
+      if (!map.has(key)) map.set(key, []);
+      map.get(key).push(i);
+    });
+    return [...map.entries()].filter(([, list]) => list.length > 1).map(([key, list]) => ({ key, name: list[0].name, list }));
+  }, [items, activeTripId]);
+
+  const filtered = useMemo(() => {
+    const q = search.trim().toLowerCase();
+    let list = library;
+    if (!showArchived) list = list.filter((e) => !archivedSet.has(e.key));
+    if (q) list = list.filter((e) => e.name.toLowerCase().includes(q));
+    return list;
+  }, [library, search, archivedSet, showArchived]);
+  const archivedCount = library.filter((e) => archivedSet.has(e.key)).length;
+
+  /* Items already on this trip sink below the ones you could still add, and
+     both halves run alphabetically — which also makes near-duplicates sit
+     next to each other and easier to spot. */
+  const byNotOnTripThenName = (a, b) => {
+    const aOn = onThisTrip.has(a.key), bOn = onThisTrip.has(b.key);
+    if (aOn !== bOn) return aOn ? 1 : -1;
+    return (a.name || "").localeCompare(b.name || "");
+  };
+
+  const grouped = useMemo(() => {
+    if (groupBy === "name") {
+      return [["All items, A–Z", [...filtered].sort(byNotOnTripThenName)]];
+    }
+    const field = groupBy === "room" ? "room_source" : "assigned_bag";
+    const order = groupBy === "room" ? rooms : bags;
+    const m = new Map();
+    filtered.forEach((e) => {
+      const k = e[field] || "Unsorted";
+      if (!m.has(k)) m.set(k, []);
+      m.get(k).push(e);
+    });
+    return [...m.entries()]
+      .sort((a, b) => {
+        const ia = order.indexOf(a[0]), ib = order.indexOf(b[0]);
+        return (ia === -1 ? 999 : ia) - (ib === -1 ? 999 : ib) || a[0].localeCompare(b[0]);
+      })
+      .map(([k, list]) => [k, [...list].sort(byNotOnTripThenName)]);
+  }, [filtered, groupBy, rooms, bags, onThisTrip]);
+
+  const selectedKeys = Object.keys(sel).filter((k) => sel[k]);
+  const selectedEntries = library.filter((e) => sel[e.key]);
+
+  const addSelected = () => {
+    onAddToTrip(selectedEntries.map((e) => ({
+      name: e.name, room_source: e.room_source, assigned_bag: e.assigned_bag,
+      quantity: e.quantity || 1, notes_or_special_instructions: e.notes_or_special_instructions || "",
+      is_prescription: !!e.is_prescription, last_minute: !!e.last_minute,
+    })));
+    setSel({});
+    onClose();
+  };
+
+  return (
+    <Sheet open={open} title="Item library" onClose={onClose}>
+      <div className="mb-3 grid grid-cols-2 gap-2">
+        <button onClick={() => setView("library")}
+          className={`rounded-lg border-2 px-2 py-2 text-sm font-bold ${view === "library" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+          All items ({library.length})
+        </button>
+        <button onClick={() => setView("duplicates")}
+          className={`rounded-lg border-2 px-2 py-2 text-sm font-bold ${view === "duplicates" ? "border-slate-900 bg-slate-900 text-white" : "border-slate-300 bg-white"}`}>
+          Check duplicates ({duplicatesOnTrip.length})
+        </button>
+      </div>
+
+      {view === "duplicates" ? (
+        <>
+          <p className="mb-3 text-sm text-slate-600">
+            Items appearing more than once on this trip. Often that's deliberate — a few pants in the grab bag and the rest in the suitcase — so nothing is removed automatically. Check the quantities look right.
+          </p>
+          {duplicatesOnTrip.length === 0 && (
+            <p className="rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              Nothing is listed twice on this trip.
+            </p>
+          )}
+          {duplicatesOnTrip.map((d) => (
+            <div key={d.key} className="mb-3 rounded-xl border-2 border-amber-300 bg-amber-50 p-3">
+              <p className="mb-2 text-sm font-bold">{d.name} — {d.list.length} entries</p>
+              <ul className="space-y-1">
+                {d.list.map((i) => (
+                  <li key={i.id} className="flex items-center justify-between gap-2 rounded-lg bg-white px-2 py-2">
+                    <span className="min-w-0 flex-1 text-xs">
+                      <span className="font-semibold">{i.assigned_bag || "No bag"}</span>
+                      <span className="text-slate-500"> · from {i.room_source || "Unsorted"}</span>
+                    </span>
+                    <span className="shrink-0 rounded bg-slate-100 px-2 py-0.5 text-xs font-bold">×{i.quantity || 1}</span>
+                  </li>
+                ))}
+              </ul>
+              <p className="mt-2 text-xs text-amber-800">
+                Total across all entries: {d.list.reduce((a, i) => a + (i.quantity || 1), 0)}
+              </p>
+            </div>
+          ))}
+        </>
+      ) : (
+        <>
+          <p className="mb-3 text-sm text-slate-600">
+            Everything you've ever packed, listed once each. Tick to add to this trip, or tap the pencil to edit — edits apply to every trip that item appears on, which is how you empty out a room you want to delete.
+          </p>
+
+          <div className="mb-2 flex gap-1">
+            {[["room", "By room"], ["bag", "By bag"], ["name", "A–Z"]].map(([id, label]) => (
+              <button key={id} onClick={() => setGroupBy(id)}
+                className={`flex-1 rounded-lg border-2 px-2 py-1.5 text-xs font-bold ${groupBy === id ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                {label}
+              </button>
+            ))}
+          </div>
+
+          <div className="relative mb-3">
+            <Search size={14} className="absolute left-2 top-2.5 text-slate-400" />
+            <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find an item"
+              className="w-full rounded-lg border-2 border-slate-300 bg-white py-1.5 pl-7 pr-2 text-sm" />
+          </div>
+
+          {archivedCount > 0 && (
+            <button onClick={() => setShowArchived(!showArchived)}
+              className="mb-3 text-xs font-bold text-teal-700">
+              {showArchived ? `Hide archived (${archivedCount})` : `Show ${archivedCount} archived item${archivedCount === 1 ? "" : "s"}`}
+            </button>
+          )}
+
+          {grouped.map(([label, list]) => (
+            <section key={label} className="mb-4">
+              <button onClick={() => setCollapsedGroups({ ...collapsedGroups, [groupBy + label]: !collapsedGroups[groupBy + label] })}
+                className="mb-1 flex w-full items-center gap-1 text-left">
+                {collapsedGroups[groupBy + label] ? <ChevronRight size={13} /> : <ChevronDown size={13} />}
+                <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">{label} ({list.length})</h3>
+              </button>
+              {!collapsedGroups[groupBy + label] && (
+              <ul className="space-y-1.5">
+                {list.map((e) => {
+                  const already = onThisTrip.has(e.key);
+                  const isArchived = archivedSet.has(e.key);
+                  return (
+                    <li key={e.key} className={`flex items-stretch overflow-hidden rounded-lg border-2 ${sel[e.key] ? "border-teal-600" : isArchived ? "border-slate-200 bg-slate-50" : "border-slate-200"} bg-white`}>
+                      <button onClick={() => setSel({ ...sel, [e.key]: !sel[e.key] })}
+                        className={`flex w-10 shrink-0 items-center justify-center ${sel[e.key] ? "bg-teal-600 text-white" : already ? "bg-slate-100 text-slate-300" : "bg-slate-50 text-slate-300"}`}>
+                        <Check size={16} strokeWidth={3} />
+                      </button>
+                      <div className="min-w-0 flex-1 px-2 py-2">
+                        <p className={`text-sm font-semibold leading-tight ${already ? "text-slate-400" : ""}`}>
+                          {e.name}
+                          {e.is_prescription && <Pill size={11} className="ml-1 inline text-teal-700" />}
+                          {e.last_minute && <Snowflake size={11} className="ml-1 inline text-sky-600" />}
+                          {isArchived && <span className="ml-2 rounded bg-slate-200 px-1.5 py-0.5 text-xs font-bold text-slate-500">Archived</span>}
+                        </p>
+                        <p className="truncate text-xs text-slate-400">
+                          {already && <span className="font-bold text-slate-500">On this trip · </span>}
+                          {e.room_source || "Unsorted"} → {e.assigned_bag || "No bag"}
+                          {e.tripIds.size > 1 && <span> · used on {e.tripIds.size} trips</span>}
+                        </p>
+                      </div>
+                      <button onClick={() => setEditing({ ...e })} className="flex w-10 shrink-0 items-center justify-center text-slate-500">
+                        <Pencil size={15} />
+                      </button>
+                    </li>
+                  );
+                })}
+              </ul>
+              )}
+            </section>
+          ))}
+
+          {filtered.length === 0 && (
+            <p className="rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              {search ? "Nothing matches that search." : "No items yet — they'll appear here once you've packed a trip."}
+            </p>
+          )}
+        </>
+      )}
+
+      {selectedKeys.length > 0 && view === "library" && (
+        <button onClick={addSelected} className={`${btn} sticky bottom-2 w-full bg-slate-900 py-4 text-white shadow-lg`}>
+          Add {selectedKeys.length} to this trip
+        </button>
+      )}
+
+      <Sheet open={!!editing} title="Edit item" onClose={() => { setEditing(null); setConfirmDelete(null); setApplyToPast(false); }}>
+        {editing && (
+          <>
+            <p className="mb-4 rounded-lg border-2 border-slate-200 bg-slate-50 p-2 text-xs text-slate-600">
+              Packed on {editing.tripIds.size} trip{editing.tripIds.size === 1 ? "" : "s"}. By default this updates how it's packed from now on — past trips keep their own record of where things actually went.
+            </p>
+            <Field label="Item"><input className={inputCls} value={editing.name} onChange={(e) => setEditing({ ...editing, name: e.target.value })} /></Field>
+            <Field label="From which room">
+              <PickOrAdd value={editing.room_source} options={rooms} placeholder="New room name"
+                onChange={(v) => setEditing({ ...editing, room_source: v })} />
+            </Field>
+            <Field label="Into which bag">
+              <PickOrAdd value={editing.assigned_bag} options={bags} placeholder="New bag name"
+                onChange={(v) => setEditing({ ...editing, assigned_bag: v })} />
+            </Field>
+
+            {editing.occurrences.length > 1 && (
+              <label className="mb-4 flex items-start gap-2 rounded-lg border-2 border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">
+                <input type="checkbox" checked={applyToPast} onChange={(e) => setApplyToPast(e.target.checked)} className="mt-0.5 h-5 w-5 shrink-0" />
+                <span>
+                  Also correct past trips ({editing.occurrences.length} entries)
+                  <span className="mt-1 block text-xs font-normal">
+                    For fixing a genuine mistake — a typo, a wrong name. Leave off if you've simply changed where something goes now, so Iona still shows where it really was.
+                  </span>
+                </span>
+              </label>
+            )}
+
+            <button
+              onClick={() => {
+                const fields = { name: editing.name, room_source: editing.room_source, assigned_bag: editing.assigned_bag };
+                const ids = applyToPast ? editing.occurrences.map((o) => o.id) : [editing.latestId];
+                onEditEverywhere(ids, fields);
+                setEditing(null);
+                setApplyToPast(false);
+              }}
+              className={`${btn} w-full bg-slate-900 py-4 text-white`}>
+              {applyToPast ? `Update all ${editing.occurrences.length} entries` : "Save"}
+            </button>
+
+            {archivedSet.has(editing.key) ? (
+              <button onClick={() => { onUnarchive(editing.key); setEditing(null); }}
+                className={`${btn} mt-3 w-full border-2 border-teal-700 bg-white text-teal-800`}>
+                Bring back into the library
+              </button>
+            ) : (
+              <button onClick={() => { onArchive(editing.key); setEditing(null); }}
+                className={`${btn} mt-3 w-full border-2 border-slate-300 bg-white text-slate-700`}>
+                Archive from library
+              </button>
+            )}
+            <p className="mt-1 text-xs text-slate-500">
+              Archiving just stops it cluttering the library and future suggestions. Every trip it's already on — including this one — keeps it exactly as it is. Reversible any time.
+            </p>
+
+            {confirmDelete !== editing.key ? (
+              <button onClick={() => setConfirmDelete(editing.key)} className={`${btn} mt-4 w-full border-2 border-red-200 bg-white text-red-700`}>
+                <Trash2 size={16} /> Remove from every trip
+              </button>
+            ) : (
+              <div className="mt-3 rounded-xl border-2 border-red-300 bg-red-50 p-3">
+                <p className="mb-2 text-sm font-bold text-red-800">Delete all {editing.occurrences.length} entries?</p>
+                <p className="mb-2 text-xs text-red-700">This removes it from past trips too, and can't be undone.</p>
+                <div className="flex gap-2">
+                  <button onClick={() => { onDeleteEverywhere(editing.occurrences.map((o) => o.id)); setEditing(null); setConfirmDelete(null); }}
+                    className={`${btn} flex-1 bg-red-700 text-white`}>Yes, delete</button>
+                  <button onClick={() => setConfirmDelete(null)} className={`${btn} flex-1 border-2 border-slate-300 bg-white`}>Cancel</button>
+                </div>
+              </div>
+            )}
+          </>
+        )}
+      </Sheet>
+    </Sheet>
+  );
+}
+
+function TripsSheet({ open, onClose, onNewTrip, trips, items, activeTripId, onSwitch, onCopyItems, onCopyTrip, onResetTicks }) {
+  const [openTrip, setOpenTrip] = useState(null);
+  const [sel, setSel] = useState({});
+  const [hideExisting, setHideExisting] = useState(true);
+  const [search, setSearch] = useState("");
+  useEffect(() => { if (open) { setOpenTrip(null); setSel({}); setHideExisting(true); setSearch(""); } }, [open]);
+
+  /* Normalised names already on the active list, so we can tell at a glance
+     what would be a duplicate. Loose matching on purpose — "Passports (all 4)"
+     and "Passports and birth certificates" won't match, but "Wipes" and
+     "wipes " will, which catches most real overlap. */
+  const existingNames = useMemo(() => {
+    const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    return new Set(items.filter((i) => i.trip_id === activeTripId).map((i) => norm(i.name)));
+  }, [items, activeTripId]);
+
+  const isAlreadyOnList = (name) => {
+    const norm = (s) => (s || "").toLowerCase().replace(/[^a-z0-9]/g, "");
+    return existingNames.has(norm(name));
+  };
+
+  const tripItems = items.filter((i) => i.trip_id === openTrip);
+  const newCount = tripItems.filter((i) => !isAlreadyOnList(i.name)).length;
+  const dupeCount = tripItems.length - newCount;
+
+  const visibleItems = useMemo(() => {
+    let list = tripItems;
+    if (hideExisting) list = list.filter((i) => !isAlreadyOnList(i.name));
+    const q = search.trim().toLowerCase();
+    if (q) list = list.filter((i) => (i.name || "").toLowerCase().includes(q));
+    return list;
+  }, [tripItems, hideExisting, search, existingNames]);
+
+  const byRoom = useMemo(() => {
+    const m = new Map();
+    visibleItems.forEach((i) => { const k = i.room_source || "Unsorted"; if (!m.has(k)) m.set(k, []); m.get(k).push(i); });
+    return [...m.entries()].sort((a, b) => a[0].localeCompare(b[0]));
+  }, [visibleItems]);
+
+  const chosen = tripItems.filter((i) => sel[i.id]);
+
+  const selectAllMissing = () => {
+    const next = { ...sel };
+    tripItems.forEach((i) => { if (!isAlreadyOnList(i.name)) next[i.id] = true; });
+    setSel(next);
+  };
+
+  return (
+    <Sheet open={open} title={openTrip ? "Borrow from this trip" : "Your trips"} onClose={onClose}>
+      {!openTrip && (
+        <button onClick={onNewTrip} className={`${btn} mb-4 w-full bg-slate-900 py-4 text-white`}>
+          <Sparkles size={16} /> Start a new trip
+        </button>
+      )}
+      {!openTrip ? (
+        <ul className="space-y-3">
+          {trips.map((t) => {
+            const n = items.filter((i) => i.trip_id === t.id).length;
+            let review = null;
+            try { review = t.review ? JSON.parse(t.review) : null; } catch {}
+            return (
+              <li key={t.id} className="rounded-xl border-2 border-slate-300 bg-white p-3">
+                <p className="font-bold">
+                  {t.name}
+                  {t.id === activeTripId && <span className="ml-2 rounded bg-teal-100 px-2 py-0.5 text-xs font-bold uppercase text-teal-800">Current</span>}
+                </p>
+                <p className="text-xs text-slate-500">{t.month} · {t.days} days · {t.transport} · {n} items</p>
+                {review?.missing && <p className="mt-1 text-xs text-amber-700">Wished we'd had: {review.missing}</p>}
+                <div className="mt-2 grid grid-cols-2 gap-2">
+                  <button onClick={() => setOpenTrip(t.id)} className={`${btn} border-2 border-slate-300 bg-white`}>See items</button>
+                  {t.id !== activeTripId
+                    ? <button onClick={() => onSwitch(t.id)} className={`${btn} bg-slate-900 text-white`}>Pack this one</button>
+                    : <button onClick={onResetTicks} className={`${btn} border-2 border-amber-300 bg-white text-amber-800`}><RotateCcw size={15} /> Untick all</button>}
+                  <button onClick={() => onCopyTrip(t.id)} className={`${btn} col-span-2 border-2 border-slate-300 bg-white`}><Copy size={15} /> Repeat as a new trip</button>
+                </div>
+              </li>
+            );
+          })}
+        </ul>
+      ) : (
+        <>
+          <button onClick={() => setOpenTrip(null)} className="mb-3 flex items-center gap-2 text-sm font-bold text-slate-500"><ArrowLeft size={15} /> All trips</button>
+
+          <div className="mb-3 rounded-xl border-2 border-slate-300 bg-white p-3">
+            <p className="mb-2 text-sm text-slate-600">
+              <strong>{newCount}</strong> item{newCount === 1 ? "" : "s"} here aren't on your current list yet
+              {dupeCount > 0 && <> · {dupeCount} you already have</>}
+            </p>
+            <div className="mb-2 flex gap-2">
+              <button onClick={() => setHideExisting(!hideExisting)}
+                className={`${btn} flex-1 border-2 text-xs ${hideExisting ? "border-teal-700 bg-teal-700 text-white" : "border-slate-300 bg-white text-slate-600"}`}>
+                {hideExisting ? "Hiding what you have" : "Showing everything"}
+              </button>
+              <button onClick={selectAllMissing} className={`${btn} flex-1 border-2 border-slate-900 bg-white text-xs`}>
+                Select all {newCount} missing
+              </button>
+            </div>
+            <div className="relative">
+              <Search size={14} className="absolute left-2 top-2.5 text-slate-400" />
+              <input value={search} onChange={(e) => setSearch(e.target.value)} placeholder="Find an item"
+                className="w-full rounded-lg border-2 border-slate-300 bg-white py-1.5 pl-7 pr-2 text-sm" />
+            </div>
+          </div>
+
+          {visibleItems.length === 0 && (
+            <p className="rounded-xl border-2 border-dashed border-slate-300 p-6 text-center text-sm text-slate-500">
+              {search ? "Nothing matches that search." : hideExisting ? "You already have everything from this trip on your current list." : "Nothing here."}
+            </p>
+          )}
+
+          <div className="space-y-4">
+            {byRoom.map(([room, list]) => {
+              const allOn = list.every((i) => sel[i.id]);
+              return (
+                <section key={room}>
+                  <div className="mb-1 flex items-center justify-between">
+                    <h3 className="text-xs font-bold uppercase tracking-wider text-slate-500">{room}</h3>
+                    <button onClick={() => { const n = { ...sel }; list.forEach((i) => { n[i.id] = !allOn; }); setSel(n); }} className="text-xs font-bold text-teal-700">
+                      {allOn ? "Clear group" : "Select group"}
+                    </button>
+                  </div>
+                  <ul className="space-y-1.5">
+                    {list.map((i) => {
+                      const dupe = isAlreadyOnList(i.name);
+                      return (
+                      <li key={i.id}>
+                        <button onClick={() => setSel({ ...sel, [i.id]: !sel[i.id] })}
+                          className={`flex w-full items-center gap-2 rounded-lg border-2 px-2 py-2 text-left ${
+                            sel[i.id] ? "border-teal-600 bg-white" : dupe ? "border-slate-200 bg-slate-100" : "border-slate-200 bg-white"
+                          }`}>
+                          <span className={`flex h-5 w-5 shrink-0 items-center justify-center rounded border-2 ${sel[i.id] ? "border-teal-600 bg-teal-600 text-white" : "border-slate-300"}`}>
+                            {sel[i.id] && <Check size={12} strokeWidth={3} />}
+                          </span>
+                          <span className="min-w-0 flex-1">
+                            <span className={`block text-sm font-semibold ${dupe ? "text-slate-400" : ""}`}>
+                              {i.name}{i.quantity > 1 && ` ×${i.quantity}`}
+                            </span>
+                            <span className="block text-xs uppercase tracking-wide text-slate-400">
+                              {dupe ? <span className="text-slate-500">Already on your list</span> : i.assigned_bag}
+                            </span>
+                          </span>
+                        </button>
+                      </li>
+                    );})}
+                  </ul>
+                </section>
+              );
+            })}
+          </div>
+          {chosen.length > 0 && (
+            <button onClick={() => { onCopyItems(chosen.map((i) => ({
+              name: i.name, room_source: i.room_source, assigned_bag: i.assigned_bag, quantity: i.quantity,
+              notes_or_special_instructions: i.notes_or_special_instructions, packer: i.packer,
+              is_prescription: i.is_prescription, last_minute: i.last_minute,
+            }))); onClose(); }} className={`${btn} mt-5 w-full bg-slate-900 py-4 text-white`}>
+              Add {chosen.length} to the current list
+            </button>
+          )}
+        </>
+      )}
+    </Sheet>
+  );
+}
+
+function PlaceList({ title, blurb, field, list, onChange, renameEverywhere, countUsing }) {
+  const [adding, setAdding] = useState("");
+  const [editIdx, setEditIdx] = useState(null);
+  const [draft, setDraft] = useState("");
+  const [msg, setMsg] = useState("");
+  const [retiring, setRetiring] = useState(null);
+  const flash = (m) => { setMsg(m); setTimeout(() => setMsg(""), 5000); };
+
+  // Drag state lives outside React state so a finger move doesn't re-render
+  // on every pixel — only the row heights (fixed) and a "dragging index"
+  // need tracking for the visual feedback.
+  const dragFrom = useRef(null);
+  const [dragIdx, setDragIdx] = useState(null);
+  const [overIdx, setOverIdx] = useState(null);
+  const rowRefs = useRef([]);
+
+  const move = (i, dir) => {
+    const n = [...list], j = i + dir;
+    if (j < 0 || j >= n.length) return;
+    [n[i], n[j]] = [n[j], n[i]];
+    onChange(n);
+  };
+  const reorder = (from, to) => {
+    if (from === to || from == null || to == null) return;
+    const n = [...list];
+    const [moved] = n.splice(from, 1);
+    n.splice(to, 0, moved);
+    onChange(n);
+  };
+  const commit = async (i) => {
+    const to = draft.trim(), from = list[i];
+    setEditIdx(null);
+    if (!to || to === from) return;
+    const n = [...list]; n[i] = to; onChange(n);
+    if (field) { const c = await renameEverywhere(field, from, to); if (c) flash(`Renamed on ${c} item${c === 1 ? "" : "s"}.`); }
+  };
+  const remove = (i) => {
+    const used = field ? countUsing(field, list[i]) : 0;
+    if (used) { setRetiring({ index: i, name: list[i], count: used, moveTo: list.find((_, j) => j !== i) || "" }); return; }
+    onChange(list.filter((_, j) => j !== i));
+  };
+
+  const findIndexAtY = (y) => {
+    for (let i = 0; i < rowRefs.current.length; i++) {
+      const el = rowRefs.current[i];
+      if (!el) continue;
+      const r = el.getBoundingClientRect();
+      if (y >= r.top && y <= r.bottom) return i;
+    }
+    return null;
+  };
+
+  const onHandleTouchStart = (i) => (e) => {
+    dragFrom.current = i;
+    setDragIdx(i);
+    setOverIdx(i);
+  };
+  const onHandleTouchMove = (e) => {
+    if (dragFrom.current == null) return;
+    e.preventDefault();
+    const touch = e.touches[0];
+    const idx = findIndexAtY(touch.clientY);
+    if (idx != null) setOverIdx(idx);
+  };
+  const onHandleTouchEnd = () => {
+    if (dragFrom.current != null && overIdx != null) reorder(dragFrom.current, overIdx);
+    dragFrom.current = null;
+    setDragIdx(null);
+    setOverIdx(null);
+  };
+
+  return (
+    <section className="mb-8">
+      <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">{title}</h3>
+      <p className="mb-1 mt-1 text-sm text-slate-600">{blurb}</p>
+      <p className="mb-3 text-xs text-slate-400">Hold the handle and drag to reorder, or use the arrows.</p>
+      {msg && <p className="mb-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-3 text-sm font-semibold text-amber-800">{msg}</p>}
+
+      {retiring && (
+        <div className="mb-3 rounded-xl border-2 border-amber-400 bg-amber-50 p-3">
+          <p className="text-sm font-bold text-amber-900">Retire "{retiring.name}"?</p>
+          <p className="mt-1 text-xs text-amber-800">
+            {retiring.count} item{retiring.count === 1 ? "" : "s"} across your trips still use it. Choose where they should go — this does rewrite past trips, deliberately, because the place no longer exists.
+          </p>
+          <select className={`${inputCls} mt-2`} value={retiring.moveTo}
+            onChange={(e) => setRetiring({ ...retiring, moveTo: e.target.value })}>
+            {list.filter((_, j) => j !== retiring.index).map((n) => <option key={n}>{n}</option>)}
+          </select>
+          <div className="mt-2 flex gap-2">
+            <button
+              onClick={async () => {
+                const moved = await renameEverywhere(field, retiring.name, retiring.moveTo);
+                onChange(list.filter((_, j) => j !== retiring.index));
+                setRetiring(null);
+                flash(`Moved ${moved} item${moved === 1 ? "" : "s"} to ${retiring.moveTo}.`);
+              }}
+              disabled={!retiring.moveTo}
+              className={`${btn} flex-1 bg-slate-900 text-white disabled:opacity-40`}>
+              Move and retire
+            </button>
+            <button onClick={() => setRetiring(null)} className={`${btn} flex-1 border-2 border-slate-300 bg-white`}>Cancel</button>
+          </div>
+        </div>
+      )}
+      <ul className="space-y-2">
+        {list.map((name, i) => (
+          <li
+            key={name + i}
+            ref={(el) => (rowRefs.current[i] = el)}
+            className={`flex items-center gap-1 rounded-xl border-2 bg-white px-2 py-1.5 transition ${
+              dragIdx === i ? "border-teal-600 opacity-60" : overIdx === i && dragIdx != null && dragIdx !== i ? "border-teal-400 bg-teal-50" : "border-slate-300"
+            }`}
+          >
+            {editIdx === i ? (
+              <>
+                <input autoFocus className="min-w-0 flex-1 rounded-lg border-2 border-teal-600 px-2 py-2" value={draft}
+                  onChange={(e) => setDraft(e.target.value)} onKeyDown={(e) => e.key === "Enter" && commit(i)} />
+                <button onClick={() => commit(i)} className="rounded-lg bg-teal-600 p-2.5 text-white"><Check size={16} strokeWidth={3} /></button>
+              </>
+            ) : (
+              <>
+                <button
+                  className="touch-none p-2 text-slate-400"
+                  onTouchStart={onHandleTouchStart(i)}
+                  onTouchMove={onHandleTouchMove}
+                  onTouchEnd={onHandleTouchEnd}
+                  aria-label="Drag to reorder"
+                >
+                  <GripVertical size={16} />
+                </button>
+                <span className="min-w-0 flex-1 truncate px-1 text-sm font-semibold">
+                  {name}{field && <span className="ml-2 text-xs font-bold text-slate-400">{countUsing(field, name)}</span>}
+                </span>
+                <button onClick={() => move(i, -1)} className="p-2 text-slate-400"><ChevronUp size={16} /></button>
+                <button onClick={() => move(i, 1)} className="p-2 text-slate-400"><ChevronDown size={16} /></button>
+                <button onClick={() => { setEditIdx(i); setDraft(name); }} className="p-2 text-slate-600"><Pencil size={16} /></button>
+                <button onClick={() => remove(i)} className="p-2 text-red-600"><Trash2 size={16} /></button>
+              </>
+            )}
+          </li>
+        ))}
+      </ul>
+      <div className="mt-3 flex gap-2">
+        <input className={inputCls} placeholder={`Add to ${title.toLowerCase()}`} value={adding} onChange={(e) => setAdding(e.target.value)}
+          onKeyDown={(e) => { if (e.key === "Enter" && adding.trim() && !list.includes(adding.trim())) { onChange([...list, adding.trim()]); setAdding(""); } }} />
+        <button onClick={() => { const v = adding.trim(); if (v && !list.includes(v)) { onChange([...list, v]); setAdding(""); } }}
+          className={`${btn} shrink-0 bg-slate-900 px-5 text-white`}><Plus size={18} /></button>
+      </div>
+    </section>
+  );
+}
+
+
+function ListsSheet({ open, onClose, rooms, bags, packers, save, renameEverywhere, countUsing }) {
+  return (
+    <Sheet open={open} title="Rooms, bags and packers" onClose={onClose}>
+      <PlaceList title="Rooms" blurb="Where things live at home. These are the sections in Gather mode, in the order you'd walk the house. The small number is how many items use each one."
+        field="room_source" list={rooms} onChange={(n) => save({ rooms: n })} renameEverywhere={renameEverywhere} countUsing={countUsing} />
+      <PlaceList title="Bags" blurb="What you actually carry. These order the Pack and In bags views. Put the reachable ones at the top."
+        field="assigned_bag" list={bags} onChange={(n) => save({ bags: n })} renameEverywhere={renameEverywhere} countUsing={countUsing} />
+      <PlaceList title="Packers" blurb="Whose job is whose. Keep one option that means either of you."
+        field="packer" list={packers} onChange={(n) => save({ packers: n })} renameEverywhere={renameEverywhere} countUsing={countUsing} />
+      <p className="text-sm text-slate-500">
+        Renaming updates every item that used the old name, on both phones. The lists themselves are stored on this device, so set them up once on each.
+      </p>
+    </Sheet>
+  );
+}
+
+
+function ApiKeyBlock() {
+  const [key, setKey] = useState("");
+  const [saved, setSaved] = useState(false);
+  useEffect(() => { (async () => setKey((await store.get("anthropic-key")) || ""))(); }, []);
+  return (
+    <div className="mb-8">
+      <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-500">AI features</h3>
+      <p className="mb-3 text-sm text-slate-600">
+        Drafting a packing list and suggesting jobs both call Claude. Paste an Anthropic API key from console.anthropic.com. It stays on this phone and is never sent anywhere except Anthropic. Everything else in the app works without it.
+      </p>
+      <Field label="Anthropic API key">
+        <input className={inputCls} type="password" placeholder="sk-ant-…" value={key}
+          onChange={(e) => { setKey(e.target.value); setSaved(false); }} />
+      </Field>
+      <button onClick={async () => { await store.set("anthropic-key", key.trim()); setSaved(true); }}
+        className={`${btn} w-full border-2 border-slate-300 bg-white`}>{saved ? "Saved" : "Save key"}</button>
+    </div>
+  );
+}
+
+function SettingsSheet({ open, onClose, onOpenLists, settings, setSettings, connect, status, statusMsg, busy }) {
+  const [copied, setCopied] = useState(false);
+  return (
+    <Sheet open={open} title="Settings" onClose={onClose}>
+      <button onClick={onOpenLists} className={`${btn} mb-8 w-full border-2 border-slate-900 bg-white py-4`}>
+        <ClipboardList size={16} /> Rooms, bags and packers
+      </button>
+
+      <ApiKeyBlock />
+
+      <h3 className="mb-2 text-sm font-bold uppercase tracking-wider text-slate-500">Sync with your partner</h3>
+      <p className="mb-4 text-sm text-slate-600">Paste the two values from your Supabase project (Settings → API). Once connected, whatever one of you ticks, the other sees within a few seconds.</p>
+      <Field label="Project URL"><input className={inputCls} placeholder="https://abcdefg.supabase.co" value={settings.url} onChange={(e) => setSettings({ ...settings, url: e.target.value })} /></Field>
+      <Field label="Publishable key (or legacy anon key)"><input className={inputCls} placeholder="sb_publishable_… or eyJhbGciOi…" value={settings.key} onChange={(e) => setSettings({ ...settings, key: e.target.value })} /></Field>
+      {status === "error" && <p className="mb-3 whitespace-pre-wrap break-words rounded-xl border-2 border-red-200 bg-red-50 p-3 text-sm font-semibold text-red-700">{statusMsg}</p>}
+      {status === "live" && <p className="mb-3 rounded-xl border-2 border-teal-200 bg-teal-50 p-3 text-sm font-semibold text-teal-800">Connected. Both phones are on the same list.</p>}
+      <button onClick={() => connect(settings.url.trim(), settings.key.trim())} disabled={busy || !settings.url || !settings.key}
+        className={`${btn} w-full bg-slate-900 py-4 text-white disabled:opacity-40`}>
+        {busy ? <><Loader2 size={16} className="animate-spin" /> Connecting…</> : "Connect"}
+      </button>
+
+      <div className="mt-8 rounded-xl border-2 border-slate-300 bg-white p-4">
+        <h3 className="text-sm font-bold uppercase tracking-wider text-slate-500">First time? Run this once</h3>
+        <p className="mt-2 text-sm text-slate-600">In Supabase, open the SQL Editor, paste this in and press Run. It creates the five tables the app needs. If you already ran an earlier version, delete those tables first.</p>
+        <pre className="mt-3 max-h-48 overflow-auto rounded-lg bg-slate-900 p-3 text-xs text-slate-100">{SQL}</pre>
+        <button onClick={() => { navigator.clipboard?.writeText(SQL); setCopied(true); setTimeout(() => setCopied(false), 2000); }}
+          className={`${btn} mt-3 w-full border-2 border-slate-300 bg-white`}>{copied ? "Copied" : "Copy the SQL"}</button>
+      </div>
+    </Sheet>
+  );
+}
+
+
+try {
+  window.__APP_STARTED__ = true;
+  const root = ReactDOM.createRoot(document.getElementById("root"));
+  root.render(<App />);
+} catch (err) {
+  window.__APP_STARTED__ = true;
+  showFailure("The app crashed while starting:", (err && err.stack) || String(err));
+}
+
+</script>
+</body>
+</html>
