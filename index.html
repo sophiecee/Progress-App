@@ -178,6 +178,8 @@
 </script>
 
 <script type="text/babel" data-presets="react">
+<script type="text/babel" data-presets="react">
+
 const { useState, useEffect, useMemo, useRef, useCallback } = React;
 
 /* ---------------------------------------------------------------- config */
@@ -278,6 +280,7 @@ const ICONS = {
   award: [["circle", { cx: 12, cy: 9, r: 5 }], ["path", { d: "M9 14l-2 7 5-3 5 3-2-7" }]],
   archive: [["path", { d: "M4 7h16v4H4z" }], ["path", { d: "M5.5 11v8h13v-8" }], ["path", { d: "M10 15h4" }]],
   reopen: [["path", { d: "M4 11a8 8 0 1115 4" }], ["path", { d: "M4 5v6h6" }]],
+  merge: [["path", { d: "M6 4v9a3 3 0 003 3h6" }], ["path", { d: "M13 13l3 3-3 3" }], ["path", { d: "M18 4v6" }]],
   camera: [["path", { d: "M4 8h3l2-2h6l2 2h3v11H4z" }], ["circle", { cx: 12, cy: 13, r: 3.5 }]],
   link: [["path", { d: "M9.5 14.5l5-5" }], ["path", { d: "M12 7l2-2a4 4 0 015.5 5.5l-2 2" }], ["path", { d: "M12 17l-2 2a4 4 0 01-5.5-5.5l2-2" }]],
   video: [["path", { d: "M4 7h10v10H4z" }], ["path", { d: "M14 11l6-3v8l-6-3" }]],
@@ -375,6 +378,9 @@ function useQueue(onDrained) {
           } else if (job.kind === "upsert") {
             const { error } = await sb.from(job.table).upsert(job.row);
             if (error) throw error;
+          } else if (job.kind === "delete") {
+            const { error } = await sb.from(job.table).delete().eq("id", job.id);
+            if (error) throw error;
           }
           pending = pending.slice(1);
           lsSet(LS.queue, pending);
@@ -455,6 +461,30 @@ function applyVerdict(track, verdict, threshold) {
 
 function tracksFor(tracks, skillId) {
   return tracks.filter((t) => t.skill_id === skillId);
+}
+
+function recomputeTrack(chronologicalReviews, threshold) {
+  const t = Math.max(1, Number(threshold) || 3);
+  let streak = 0, status = "not_yet_reviewed", retired = false, retiredAt = null;
+  chronologicalReviews.forEach((r) => {
+    if (r.verdict === "skipped") return;
+    if (r.verdict === "maintained") {
+      streak += 1;
+      status = "maintained";
+      if (streak >= t) { retired = true; status = "achieved"; retiredAt = r.reviewed_on; }
+    } else if (r.verdict === "lost" || r.verdict === "inconsistent") {
+      streak = 0;
+      status = r.verdict;
+      retired = false;
+      retiredAt = null;
+    }
+  });
+  return {
+    maintained_streak: streak,
+    current_status: status,
+    is_retired: retired,
+    retired_at: retiredAt ? retiredAt + "T12:00:00.000Z" : null,
+  };
 }
 function disciplinesOf(tracks, skillId) {
   return tracksFor(tracks, skillId).map((t) => t.discipline);
@@ -1110,12 +1140,16 @@ function SkillsView({ skills, tracks, reviews, media, threshold, canWrite, onOpe
         if (!term) return true;
         return (r.skill.name + " " + (r.skill.description || "")).toLowerCase().includes(term);
       })
-      .sort((a, b) => (a.skill.name || "").localeCompare(b.skill.name || ""));
+      .sort((a, b) => (b.skill.created_at || "").localeCompare(a.skill.created_at || ""));
   }, [tracks, skillById, disc, show, q, reviews, media]);
 
   return (
     <div className="pb-32">
-      <div className="sticky top-0 z-20 border-b border-slate-200 bg-[#eef2f6]/95 px-4 pb-3 pt-3 backdrop-blur">
+      <div className="sticky top-0 z-20 border-b-4 border-slate-900 bg-white px-4 pb-3 pt-3">
+        <div className="mb-2 flex items-center gap-2">
+          <Icon name="skills" size={17} className="text-slate-900" />
+          <span className="text-[12.5px] font-bold uppercase tracking-[0.14em] text-slate-900">Every skill on record</span>
+        </div>
         <input className={cx(inputCls, "py-2.5")} value={q} onChange={(e) => setQ(e.target.value)} placeholder="Search skills" />
         <div className="mt-2.5 -mx-4 flex gap-2 overflow-x-auto px-4 pb-1">
           <Chip onClick={() => setShow("active")} active={show === "active"}>In review</Chip>
@@ -1170,6 +1204,7 @@ function SkillsView({ skills, tracks, reviews, media, threshold, canWrite, onOpe
                     Achieved in some
                   </span>
                 ) : null}
+                <span className="tnum text-[13px] text-slate-500">Added {fmtDate(r.skill.created_at)}</span>
                 <span className="tnum text-[13px] text-slate-500">{r.entries} entr{r.entries === 1 ? "y" : "ies"}</span>
                 {r.shots ? (
                   <span className="inline-flex items-center gap-1 text-[13px] text-slate-500">
@@ -1187,8 +1222,11 @@ function SkillsView({ skills, tracks, reviews, media, threshold, canWrite, onOpe
   );
 }
 
-function SkillDetail({ skill, tracks, reviews, media, threshold, canWrite, onClose, onReopen, onEdit, onAddMedia, onArchive, onVerdict, signedUrls }) {
+function SkillDetail({ skill, tracks, reviews, media, threshold, canWrite, onClose, onReopen, onEdit, onAddMedia, onArchive, onVerdict, onFixEntry, onMergeAway, otherSkills, signedUrls }) {
   const [splitFor, setSplitFor] = useState(null);
+  const [fixing, setFixing] = useState(null); // a review being corrected
+  const [mergeOpen, setMergeOpen] = useState(false);
+  const [mergeQuery, setMergeQuery] = useState("");
   if (!skill) return null;
   const mine = media.filter((m) => m.skill_id === skill.id);
   const myTracks = tracksFor(tracks, skill.id).slice().sort(
@@ -1225,6 +1263,43 @@ function SkillDetail({ skill, tracks, reviews, media, threshold, canWrite, onClo
               <Icon name={skill.is_archived ? "reopen" : "archive"} size={16} />
               {skill.is_archived ? "Restore" : "Archive"}
             </span>
+          </button>
+          {!skill.is_archived && onMergeAway ? (
+            <button onClick={() => setMergeOpen(true)} className="rounded-xl border-2 border-slate-200 px-4 py-3 text-[15px] font-semibold">
+              <span className="inline-flex items-center gap-1.5"><Icon name="merge" size={16} /> Merge into…</span>
+            </button>
+          ) : null}
+        </div>
+      ) : null}
+
+      {mergeOpen ? (
+        <div className="mt-3 rounded-xl border-2 border-amber-200 bg-amber-50 p-3.5">
+          <p className="mb-2 text-[14px] text-amber-900">
+            Folds this skill's whole history into another one, then archives this one. Nothing is deleted — pick the
+            skill this was a duplicate of.
+          </p>
+          <input className={inputCls} value={mergeQuery} onChange={(e) => setMergeQuery(e.target.value)}
+            placeholder="Search skills…" autoFocus />
+          <div className="mt-2 max-h-52 overflow-auto">
+            {(otherSkills || [])
+              .filter((s) => s.id !== skill.id && !s.is_archived)
+              .filter((s) => !mergeQuery.trim() || s.name.toLowerCase().includes(mergeQuery.trim().toLowerCase()))
+              .slice(0, 20)
+              .map((s) => (
+                <button key={s.id} className="mb-1.5 flex w-full items-center justify-between gap-2 rounded-lg bg-white px-3 py-2.5 text-left"
+                  onClick={() => {
+                    if (confirm("Merge \u201c" + skill.name + "\u201d into \u201c" + s.name + "\u201d? This skill will be archived and its history moved across.")) {
+                      onMergeAway(skill, s);
+                      setMergeOpen(false);
+                    }
+                  }}>
+                  <span className="text-[15px] font-semibold">{s.name}</span>
+                  <Icon name="chevron-right" size={16} className="text-slate-300" />
+                </button>
+              ))}
+          </div>
+          <button className="mt-1 w-full rounded-lg py-2 text-[14px] font-semibold text-slate-600" onClick={() => setMergeOpen(false)}>
+            Cancel
           </button>
         </div>
       ) : null}
@@ -1329,6 +1404,12 @@ function SkillDetail({ skill, tracks, reviews, media, threshold, canWrite, onClo
                       <div className="flex items-baseline gap-2">
                         <span className={cx("text-[16px] font-bold", tone)}>{v ? v.label : r.verdict}</span>
                         {r.retired_by_this ? <span className="text-[12px] font-semibold text-emerald-700">— achieved here</span> : null}
+                        {canWrite && onFixEntry ? (
+                          <button className="ml-auto shrink-0 text-[13px] font-semibold text-slate-500 underline"
+                            onClick={() => setFixing({ review: r, discipline: t.discipline })}>
+                            Fix
+                          </button>
+                        ) : null}
                       </div>
                       <div className="tnum text-[13px] text-slate-500">
                         Observed {fmtDate(r.reviewed_on)} · logged {fmtWhen(r.created_at)}
@@ -1342,7 +1423,57 @@ function SkillDetail({ skill, tracks, reviews, media, threshold, canWrite, onClo
           </div>
         );
       })}
+
+      <Sheet open={!!fixing} onClose={() => setFixing(null)} title="Fix this entry">
+        {fixing ? (
+          <FixEntryForm
+            review={fixing.review}
+            onCancel={() => setFixing(null)}
+            onSave={(verdict, note) => { onFixEntry(skill, fixing.discipline, fixing.review, verdict, note, threshold); setFixing(null); }}
+            onDelete={() => {
+              if (confirm("Remove this entry? The streak and status for this discipline will be recalculated from what is left.")) {
+                onFixEntry(skill, fixing.discipline, fixing.review, null, null, threshold);
+                setFixing(null);
+              }
+            }}
+          />
+        ) : null}
+      </Sheet>
     </Sheet>
+  );
+}
+
+/* A correction is itself just an ordinary edit — change the verdict or note,
+   or remove the entry altogether. There is no time limit, because only the
+   two parents can ever write to this app; there is no hidden trail of what
+   the wrong entry said, because removing it removes it, but the correction
+   itself is timestamped like everything else. */
+function FixEntryForm({ review, onCancel, onSave, onDelete }) {
+  const [verdict, setVerdict] = useState(review.verdict);
+  const [note, setNote] = useState(review.note || "");
+  return (
+    <div>
+      <p className="mb-1 text-[14px] text-slate-500">Originally logged {fmtWhen(review.created_at)}, observed {fmtDate(review.reviewed_on)}.</p>
+      <div className="my-3 grid grid-cols-2 gap-2">
+        {VERDICTS.map((v) => (
+          <button key={v.id} className={cx("verdict", v.cls, v.id === verdict && "sel")} onClick={() => setVerdict(v.id)}>
+            <Icon name={v.icon} size={19} /> {v.label}
+          </button>
+        ))}
+      </div>
+      <Field label="Note">
+        <textarea className={cx(inputCls, "min-h-[90px]")} value={note} onChange={(e) => setNote(e.target.value)} />
+      </Field>
+      <button className="mb-2 w-full rounded-2xl bg-slate-900 py-3.5 text-[16px] font-bold text-white"
+        onClick={() => onSave(verdict, note.trim())}>
+        Save correction
+      </button>
+      <button className="mb-2 w-full rounded-2xl border-2 border-rose-200 py-3.5 text-[16px] font-bold text-rose-700"
+        onClick={onDelete}>
+        Remove this entry entirely
+      </button>
+      <button className="w-full py-2.5 text-[14px] font-semibold text-slate-500" onClick={onCancel}>Cancel</button>
+    </div>
   );
 }
 
@@ -1354,7 +1485,31 @@ function checkAnon(text, avoidList) {
   return avoidList.filter((n) => n && hay.includes(n.toLowerCase()));
 }
 
-function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoidList, online }) {
+/* A light-touch near-duplicate check: same words, roughly, ignoring order,
+   case and short filler words. Enough to catch "Holds a spoon" vs "Holding
+   the spoon to mouth" without being so strict it misses real near-misses,
+   and without being a hard block — it just warns and lets you carry on. */
+function similarSkills(name, skills, excludeId) {
+  const stop = { a: 1, an: 1, the: 1, to: 1, and: 1, in: 1, on: 1, with: 1, of: 1 };
+  const words = (t) =>
+    (t || "").toLowerCase().replace(/[^a-z0-9\s]/g, " ").split(/\s+/).filter((w) => w && !stop[w]);
+  const target = new Set(words(name));
+  if (!target.size) return [];
+  return skills
+    .filter((s) => s.id !== excludeId && !s.is_archived)
+    .map((s) => {
+      const theirs = new Set(words(s.name));
+      if (!theirs.size) return null;
+      let overlap = 0;
+      target.forEach((w) => { if (theirs.has(w)) overlap++; });
+      const score = overlap / Math.max(target.size, theirs.size);
+      return score >= 0.6 ? { skill: s, score: score } : null;
+    })
+    .filter(Boolean)
+    .sort((a, b) => b.score - a.score);
+}
+
+function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoidList, online, allSkills, onMergeInstead }) {
   const [achieved, setAchieved] = useState(false);
   const blank = { name: "", description: "", date_first_observed: todayISO() };
   const [form, setForm] = useState(blank);
@@ -1377,6 +1532,9 @@ function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoid
   const set = (k) => (v) => setForm((f) => Object.assign({}, f, { [k]: v }));
   const hits = checkAnon(form.name + " " + form.description + " " + caption, avoidList);
   const removing = (initialDisciplines || []).filter((d) => discs.indexOf(d) === -1);
+  const dupes = !initial && form.name.trim().length > 2
+    ? similarSkills(form.name, allSkills || [], initial && initial.id)
+    : [];
 
   return (
     <Sheet
@@ -1410,6 +1568,28 @@ function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoid
       <Field label="Skill" hint="What he can do, in plain words. “Holds a spoon to mouth”, not “fine motor target 3”.">
         <input className={inputCls} value={form.name} onChange={(e) => set("name")(e.target.value)} />
       </Field>
+
+      {dupes.length ? (
+        <div className="mb-4">
+          <Banner tone="warn">
+            <div className="mb-1.5 font-semibold">This looks like it might already exist:</div>
+            {dupes.slice(0, 2).map((d) => (
+              <div key={d.skill.id} className="mt-1 flex items-center justify-between gap-2">
+                <span>{d.skill.name}</span>
+                {onMergeInstead && discs.length ? (
+                  <button
+                    className="shrink-0 rounded-lg bg-white px-3 py-1.5 text-[13px] font-semibold text-amber-900 underline"
+                    onClick={() => onMergeInstead(d.skill, discs)}
+                  >
+                    Add my disciplines there instead
+                  </button>
+                ) : null}
+              </div>
+            ))}
+            <div className="mt-1.5 text-[13px]">You can still add this as a new, separate skill if it is genuinely different.</div>
+          </Banner>
+        </div>
+      ) : null}
 
       <div className="mb-4">
         <span className="mb-1.5 block text-[13px] font-bold uppercase tracking-wide text-slate-500">Disciplines</span>
@@ -2125,6 +2305,85 @@ function App() {
     flash("Back in " + ((DISC_BY_ID[track.discipline] || {}).label || "") + " review.");
   }
 
+  /* A correction to a specific past entry: change its verdict/note, or remove
+     it, then rebuild that discipline's streak and status from whatever
+     history remains. verdict === null means delete rather than edit. */
+  function fixEntry(skill, discipline, oldReview, newVerdict, newNote, thresholdNow) {
+    if (!canWrite) return;
+    const deleting = newVerdict === null;
+    const now = new Date().toISOString();
+
+    const nextReviews = deleting
+      ? data.reviews.filter((r) => r.id !== oldReview.id)
+      : data.reviews.map((r) => (r.id === oldReview.id ? Object.assign({}, r, { verdict: newVerdict, note: newNote, corrected_at: now }) : r));
+
+    const remaining = nextReviews
+      .filter((r) => r.skill_id === skill.id && r.discipline === discipline)
+      .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+    const recomputed = recomputeTrack(remaining, thresholdNow);
+    const targetTrack = data.tracks.find((t) => t.skill_id === skill.id && t.discipline === discipline);
+
+    data.setReviews(() => nextReviews);
+    if (targetTrack) {
+      data.setTracks((ts) => ts.map((t) => (t.id === targetTrack.id ? Object.assign({}, t, recomputed, { updated_at: now }) : t)));
+    }
+
+    const jobs = [];
+    if (deleting) jobs.push({ kind: "delete", table: "reviews", id: oldReview.id });
+    else jobs.push({ kind: "update", table: "reviews", id: oldReview.id, patch: { verdict: newVerdict, note: newNote, corrected_at: now } });
+    if (targetTrack) jobs.push({ kind: "update", table: "skill_tracks", id: targetTrack.id, patch: recomputed });
+    enqueue(jobs);
+    drain();
+
+    flash(deleting ? "Entry removed. Streak recalculated." : "Correction saved. Streak recalculated.");
+  }
+
+  /* Folds a duplicate skill into an existing one. Every review and photo
+     moves across keeping its own timestamp and discipline, so the combined
+     history is exactly what it would have been had everything always been
+     logged against the one skill. The duplicate is archived afterwards,
+     never deleted, so this can always be checked or reversed by hand. */
+  function mergeSkill(source, target) {
+    if (!canWrite || source.id === target.id) return;
+    const now = new Date().toISOString();
+    const sourceTracks = tracksFor(data.tracks, source.id);
+    const jobs = [];
+
+    let nextTracks = data.tracks.slice();
+    let nextReviews = data.reviews.map((r) => (r.skill_id === source.id ? Object.assign({}, r, { skill_id: target.id }) : r));
+
+    sourceTracks.forEach((st) => {
+      let targetTrack = nextTracks.find((t) => t.skill_id === target.id && t.discipline === st.discipline);
+      if (!targetTrack) {
+        targetTrack = newTrack(target.id, st.discipline, false);
+        nextTracks.push(targetTrack);
+        jobs.push({ kind: "insert", table: "skill_tracks", row: targetTrack });
+      }
+      const merged = nextReviews
+        .filter((r) => r.skill_id === target.id && r.discipline === st.discipline)
+        .sort((a, b) => (a.created_at < b.created_at ? -1 : 1));
+      const recomputed = recomputeTrack(merged, threshold);
+      nextTracks = nextTracks.map((t) => (t.id === targetTrack.id ? Object.assign({}, t, recomputed, { updated_at: now }) : t));
+      jobs.push({ kind: "update", table: "skill_tracks", id: targetTrack.id, patch: recomputed });
+    });
+
+    // The source skill's own tracks are now redundant duplicates of the target's; archive the skill rather than delete it.
+    const archivePatch = { is_archived: true, updated_at: now };
+    data.setSkills((ss) => ss.map((s) => (s.id === source.id ? Object.assign({}, s, archivePatch) : s)));
+    data.setReviews(() => nextReviews);
+    data.setTracks(() => nextTracks);
+
+    jobs.push({ kind: "update", table: "skills", id: source.id, patch: archivePatch });
+    data.reviews.filter((r) => r.skill_id === source.id).forEach((r) => {
+      jobs.push({ kind: "update", table: "reviews", id: r.id, patch: { skill_id: target.id } });
+    });
+
+    enqueue(jobs);
+    drain();
+    setOpenSkill(null);
+    flash("Merged into \u201c" + target.name + "\u201d. \u201c" + source.name + "\u201d is archived, not deleted.");
+  }
+
   async function savePhoto(skill, file, caption) {
     if (demo) { flash("Photos are switched off in the demo."); return; }
     const sb = getClient();
@@ -2256,9 +2515,25 @@ function App() {
           onEdit={(s) => { setEditing(s); setEditorOpen(true); setOpenSkill(null); }}
           onArchive={archiveSkill}
           onVerdict={handleVerdict}
+          onFixEntry={fixEntry}
+          onMergeAway={mergeSkill}
+          otherSkills={data.skills}
           onAddMedia={(s, mode) => { setMediaFor(s); setMediaMode(mode); }} />
 
         <SkillEditor open={editorOpen} initial={editing} initialDisciplines={editingDiscs} avoidList={avoidList}
+          allSkills={data.skills}
+          onMergeInstead={!editing ? (target, discsFromEditor) => {
+            const missing = (discsFromEditor || []).filter((d) => !tracksFor(data.tracks, target.id).some((t) => t.discipline === d));
+            missing.forEach((d) => {
+              const row = newTrack(target.id, d, false);
+              data.setTracks((ts) => ts.concat([row]));
+              enqueue({ kind: "insert", table: "skill_tracks", row: row });
+            });
+            drain();
+            setEditorOpen(false);
+            setEditing(null);
+            flash(missing.length ? "Added your disciplines to \u201c" + target.name + "\u201d." : "\u201c" + target.name + "\u201d already has those disciplines.");
+          } : null}
           online={online} onClose={() => { setEditorOpen(false); setEditing(null); }} onSave={saveSkill} />
 
         <MediaEditor open={!!mediaFor} mode={mediaMode} skill={mediaFor} online={online}
