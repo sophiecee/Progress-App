@@ -1,6 +1,6 @@
 # Skill Chronicle
 
-(Previously "Observation Log".) A private web app for recording a child's developmental skills and sharing them with his therapy team.
+A private web app for recording a child's developmental skills and sharing them with his therapy team.
 
 Built because the EHCP requires a diary of new achievements, and the therapy teams only see him at nursery — so they miss what happens at home. Two parents log observations; the professionals read them; the record is exported once a term.
 
