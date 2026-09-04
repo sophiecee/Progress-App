@@ -213,7 +213,16 @@ const LS = {
   conn: "obslog.conn.v1",
   avoid: "obslog.avoidnames.v1", // never leaves this device
   threshLocal: "obslog.threshold.v1",
+  draftPrefix: "obslog.draft.skill.", // + "new" or a skill id
 };
+
+/* Android can silently kill a backgrounded tab to free memory — flicking away
+   to copy something and back can reload the page and wipe anything typed that
+   was only ever held in React state. So the skill form autosaves to the
+   device as you type, and offers to restore it if it finds one waiting. */
+function draftKey(skillId) {
+  return LS.draftPrefix + (skillId || "new");
+}
 
 /* --------------------------------------------------------------- helpers */
 
@@ -940,7 +949,7 @@ function SweepView({ skills, tracks, reviews, threshold, canWrite, onVerdict }) 
         r.minStreak = Math.min.apply(null, r.tracks.map((t) => Number(t.maintained_streak) || 0));
         return r;
       })
-      .sort((a, b) => (a.skill.name || "").localeCompare(b.skill.name || ""));
+      .sort((a, b) => (b.skill.created_at || "").localeCompare(a.skill.created_at || ""));
   }, [tracks, skillById, discFilter]);
 
   /* A skill counts as reviewed today once every one of its active tracks has
@@ -1099,7 +1108,7 @@ function SweepView({ skills, tracks, reviews, threshold, canWrite, onVerdict }) 
 
 function SkillsView({ skills, tracks, reviews, media, threshold, canWrite, onOpen, onAdd }) {
   const [disc, setDisc] = useState("all");
-  const [show, setShow] = useState("active");
+  const [show, setShow] = useState("all");
   const [q, setQ] = useState("");
 
   const skillById = useMemo(() => Object.fromEntries(skills.map((s) => [s.id, s])), [skills]);
@@ -1516,8 +1525,13 @@ function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoid
   const [caption, setCaption] = useState("");
   const [warn, setWarn] = useState([]);
   const [busy, setBusy] = useState(false);
+  const [foundDraft, setFoundDraft] = useState(null);
+  const key = draftKey(initial && initial.id);
+  const restoring = useRef(false);
 
   useEffect(() => {
+    if (!open) return;
+    restoring.current = true;
     setForm(initial ? Object.assign({}, initial) : blank);
     setDiscs(initialDisciplines || []);
     setPhotos([]);
@@ -1525,7 +1539,20 @@ function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoid
     setWarn([]);
     setBusy(false);
     setAchieved(false);
+    const saved = lsGet(key, null);
+    // Only offer a draft that actually has something worth keeping.
+    setFoundDraft(saved && saved.form && saved.form.name && saved.form.name.trim() ? saved : null);
+    restoring.current = false;
   }, [initial, initialDisciplines, open]);
+
+  /* Autosave as you type, so a backgrounded tab getting killed loses nothing.
+     Photos cannot be saved this way (files are not serialisable), so they
+     are the one thing you would need to re-add after a restore. */
+  useEffect(() => {
+    if (!open || restoring.current) return;
+    if (!form.name || !form.name.trim()) { localStorage.removeItem(key); return; }
+    lsSet(key, { form: form, discs: discs, achieved: achieved, caption: caption, savedAt: new Date().toISOString() });
+  }, [open, key, form, discs, achieved, caption]);
 
   const set = (k) => (v) => setForm((f) => Object.assign({}, f, { [k]: v }));
   const hits = checkAnon(form.name + " " + form.description + " " + caption, avoidList);
@@ -1554,6 +1581,7 @@ function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoid
                 caption.trim(),
                 achieved
               );
+              localStorage.removeItem(key);
             } finally {
               setBusy(false);
             }
@@ -1563,6 +1591,34 @@ function SkillEditor({ open, initial, initialDisciplines, onClose, onSave, avoid
         </button>
       }
     >
+      {foundDraft ? (
+        <div className="mb-4">
+          <Banner tone="info">
+            <div className="mb-1.5 font-semibold">Unsaved text found from {fmtWhen(foundDraft.savedAt)}</div>
+            <div className="mb-2 text-[14px]">
+              Probably from switching apps to copy something in. {foundDraft.form.name ? "\u201c" + foundDraft.form.name + "\u201d" : "It"} was not saved yet.
+              {foundDraft.form ? " Photos are not kept in a draft \u2014 you would need to add those again." : ""}
+            </div>
+            <div className="flex gap-2">
+              <button className="rounded-lg bg-slate-900 px-3 py-2 text-[14px] font-semibold text-white"
+                onClick={() => {
+                  setForm(Object.assign({}, blank, foundDraft.form));
+                  setDiscs(foundDraft.discs || []);
+                  setAchieved(!!foundDraft.achieved);
+                  setCaption(foundDraft.caption || "");
+                  setFoundDraft(null);
+                }}>
+                Restore it
+              </button>
+              <button className="rounded-lg border-2 border-slate-200 px-3 py-2 text-[14px] font-semibold"
+                onClick={() => { localStorage.removeItem(key); setFoundDraft(null); }}>
+                Discard
+              </button>
+            </div>
+          </Banner>
+        </div>
+      ) : null}
+
       <Field label="Skill" hint="What he can do, in plain words. “Holds a spoon to mouth”, not “fine motor target 3”.">
         <input className={inputCls} value={form.name} onChange={(e) => set("name")(e.target.value)} />
       </Field>
