@@ -12,7 +12,8 @@
 
    Must sit next to index.html in the repo, named sw.js. */
 
-const CACHE = "skill-chronicle-v1";
+const CACHE = "skill-chronicle-v2"; // v1 saved library copies the browser refused; this clears them
+// The pinned library versions the page loads (kept here for reference).
 const LIBS = [
   "https://unpkg.com/react@18.3.1/umd/react.production.min.js",
   "https://unpkg.com/react-dom@18.3.1/umd/react-dom.production.min.js",
@@ -24,15 +25,17 @@ const LIB_HOSTS = ["unpkg.com", "cdn.jsdelivr.net", "cdn.tailwindcss.com"];
 const PAGE_TIMEOUT_MS = 4000;
 
 self.addEventListener("install", (event) => {
+  /* Only the page is saved up front. The libraries are saved the first time
+     the page itself asks for them, using the page's own request, so the
+     saved copy is always in the form the browser will accept. (Version 1
+     pre-saved them in a different form, and the browser refused them,
+     which stopped the app loading at all.) */
   event.waitUntil((async () => {
-    const cache = await caches.open(CACHE);
-    // One failed download must not stop the rest being saved.
-    await Promise.all([new Request("./", { cache: "reload" })].concat(LIBS.map((u) => new Request(u, { mode: "no-cors" }))).map(async (req) => {
-      try {
-        const res = await fetch(req);
-        if (res && (res.ok || res.type === "opaque")) await cache.put(req, res);
-      } catch (e) {}
-    }));
+    try {
+      const cache = await caches.open(CACHE);
+      const res = await fetch(new Request("./", { cache: "reload" }));
+      if (res && res.ok) await cache.put(new URL("./", self.registration.scope).href, res);
+    } catch (e) {}
     await self.skipWaiting();
   })());
 });
@@ -71,7 +74,8 @@ async function pageFirstFromNetwork(request) {
 async function libFirstFromCache(request) {
   const cache = await caches.open(CACHE);
   const saved = await cache.match(request.url, { ignoreVary: true });
-  if (saved) return saved;
+  // A strict ("cors") request cannot be answered with a loose ("opaque") copy.
+  if (saved && !(request.mode === "cors" && saved.type === "opaque")) return saved;
   const res = await fetch(request);
   if (res && (res.ok || res.type === "opaque")) await cache.put(request.url, res.clone());
   return res;
